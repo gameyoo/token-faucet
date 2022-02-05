@@ -1,5 +1,5 @@
 [programs.localnet]
-token_faucet = "BkGzzYK5LkUAPcMM643AcSjRSP9PgWzVd6NryAQ3QSW"
+token_faucet = "3Yi5DE6ZfyS8vFRRMnuM4kE5XSvtmFgNE3wMHwpdzsHK"
 
 [registry]
 url = "https://anchor.projectserum.com"
