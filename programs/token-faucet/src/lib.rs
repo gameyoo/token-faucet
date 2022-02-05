@@ -2,8 +2,9 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, SetAuthority};
 use spl_token::instruction::AuthorityType;
 use solana_program::program_option::COption;
+use std::convert::TryFrom;
 
-declare_id!("BkGzzYK5LkUAPcMM643AcSjRSP9PgWzVd6NryAQ3QSW");
+declare_id!("3Yi5DE6ZfyS8vFRRMnuM4kE5XSvtmFgNE3wMHwpdzsHK");
 
 #[constant]
 pub const INIT_PRODUCTION_REDUCTION_BLOCK_HEIGHT: u64 = 2_625_000;
@@ -28,6 +29,9 @@ pub mod token_faucet {
         nonce: u8
     ) -> ProgramResult {
         
+        msg!("program id:{}", ctx.program_id);
+        msg!("config acount ower:{}", ctx.accounts.faucet_config_account.to_account_info().owner);
+
         let faucet_config_account = &mut ctx.accounts.faucet_config_account;
         faucet_config_account.token_program = *ctx.accounts.token_program.key;
         faucet_config_account.token_mint = *ctx.accounts.token_mint.to_account_info().key;
@@ -41,6 +45,7 @@ pub mod token_faucet {
         faucet_config_account.receiver_marketing_and_sales = *ctx.accounts.receiver_marketing_and_sales.key;
         faucet_config_account.receiver_ecosystem = *ctx.accounts.receiver_ecosystem.key;
         
+        faucet_config_account.magic = 0x544b4654;
         faucet_config_account.nonce = nonce;
         faucet_config_account.current_block_height = 0;
         faucet_config_account.next_production_reduction_block_height = INIT_PRODUCTION_REDUCTION_BLOCK_HEIGHT;
@@ -57,6 +62,7 @@ pub mod token_faucet {
         msg!("Receiver liquidity mining key: {}", faucet_config_account.receiver_liquidity_mining);
         msg!("Receiver marketing and sales key: {}", faucet_config_account.receiver_marketing_and_sales);
         msg!("Receiver ecosystem key: {}", faucet_config_account.receiver_ecosystem);
+        msg!("Magic: 0x{:x}", faucet_config_account.magic);
         msg!("Nonce: {}", faucet_config_account.nonce);
         msg!("Current block height: {}", faucet_config_account.current_block_height);
         msg!("Next production reduction block height: {}", faucet_config_account.next_production_reduction_block_height);
@@ -67,6 +73,9 @@ pub mod token_faucet {
     }
 
     pub fn drip(ctx: Context<Drip>) -> ProgramResult {
+                
+        msg!("program id:{}", ctx.program_id);
+        msg!("config acount ower:{}", ctx.accounts.faucet_config_account.to_account_info().owner);
 
         let current_time = ctx.accounts.clock.unix_timestamp;
         
@@ -81,44 +90,42 @@ pub mod token_faucet {
                     None,
                 )?;
             }
-
-            return Err(FaucetError::TotalSupplyLimit.into());
+            
+            return Err(TokenFaucetError::TotalSupplyLimit.into());
         }
 
         let faucet_config_account = &mut ctx.accounts.faucet_config_account;
-
-        let intervals = current_time - faucet_config_account.last_gen_block_timestamp;
+        let intervals = current_time.checked_sub(faucet_config_account.last_gen_block_timestamp).unwrap();
         msg!("Called Interval: {}s", intervals);
-        if intervals < BLOCK_GEN_RATE as i64 {
-            return Err(FaucetError::InsufficientIntervalError.into());
+        if intervals < i64::try_from(BLOCK_GEN_RATE).unwrap() {
+            return Err(TokenFaucetError::InsufficientIntervalError.into());
         }
-
-        let remain_seconds_temp = intervals as u64 % BLOCK_GEN_RATE as u64;
+        
+        let remain_seconds_temp = (u64::try_from(intervals).unwrap()).checked_rem(u64::try_from(BLOCK_GEN_RATE).unwrap()).unwrap();
         msg!("Remain seconds: {}", remain_seconds_temp);
 
-        let gen_block_nums = intervals as u64 / BLOCK_GEN_RATE as u64;
+        let gen_block_nums = (u64::try_from(intervals).unwrap()).checked_div(u64::try_from(BLOCK_GEN_RATE).unwrap()).unwrap();
 
-        let mut distribution_amounts = gen_block_nums * faucet_config_account.coin_nums_per_block;
+        let mut distribution_amounts = gen_block_nums.checked_mul(faucet_config_account.coin_nums_per_block).unwrap();
 
         msg!("Current block height: {}", faucet_config_account.current_block_height);
         msg!("Current coin number of per block: {}", faucet_config_account.coin_nums_per_block);
         msg!("Current next production reduction block height: {}", faucet_config_account.next_production_reduction_block_height);
 
-        if faucet_config_account.current_block_height + gen_block_nums >= faucet_config_account.next_production_reduction_block_height {
+        if (faucet_config_account.current_block_height).checked_add(gen_block_nums).unwrap()  >= faucet_config_account.next_production_reduction_block_height {
 
-            if faucet_config_account.current_block_height + gen_block_nums > faucet_config_account.next_production_reduction_block_height {
+            if (faucet_config_account.current_block_height).checked_add(gen_block_nums).unwrap() > faucet_config_account.next_production_reduction_block_height {
 
                 msg!("Intervals cross production reduction");
 
-                let after_production_reduction_block_nums  = faucet_config_account.current_block_height + gen_block_nums - faucet_config_account.next_production_reduction_block_height;
-                let before_production_reduction_block_nums: u64 = gen_block_nums - after_production_reduction_block_nums;
-                distribution_amounts = before_production_reduction_block_nums * faucet_config_account.coin_nums_per_block + after_production_reduction_block_nums * (faucet_config_account.coin_nums_per_block / 2);
-
+                let after_production_reduction_block_nums  = faucet_config_account.current_block_height.checked_add(gen_block_nums).unwrap().checked_sub(faucet_config_account.next_production_reduction_block_height).unwrap();
+                let before_production_reduction_block_nums: u64 = gen_block_nums.checked_sub(after_production_reduction_block_nums).unwrap();
+                distribution_amounts = before_production_reduction_block_nums.checked_mul(faucet_config_account.coin_nums_per_block).unwrap().checked_add(after_production_reduction_block_nums.checked_mul(faucet_config_account.coin_nums_per_block.checked_div(2).unwrap()).unwrap()).unwrap();
             }
 
             msg!("Perform production reduction...");
-            faucet_config_account.coin_nums_per_block /= 2;
-            faucet_config_account.next_production_reduction_block_height *= 2;
+            faucet_config_account.coin_nums_per_block = faucet_config_account.coin_nums_per_block.checked_div(2).unwrap();
+            faucet_config_account.next_production_reduction_block_height = faucet_config_account.next_production_reduction_block_height.checked_mul(2).unwrap();
             msg!("Now coin number of per block: {}", faucet_config_account.coin_nums_per_block);
             msg!("Now next production reduction block height: {}", faucet_config_account.next_production_reduction_block_height);
         }
@@ -141,8 +148,8 @@ pub mod token_faucet {
         msg!("This time marketing_and_sales should be distributed token's amounts: {}", receiver_marketing_and_sales_amount);
         msg!("This time ecosystem should be distributed token's amounts: {}", receiver_ecosystem_amount);
         
-        faucet_config_account.current_block_height += gen_block_nums;
-        faucet_config_account.last_gen_block_timestamp = current_time - remain_seconds_temp as i64;
+        faucet_config_account.current_block_height = faucet_config_account.current_block_height.checked_add(gen_block_nums).unwrap();
+        faucet_config_account.last_gen_block_timestamp = current_time.checked_sub(i64::try_from(remain_seconds_temp).unwrap()).unwrap();
         msg!("Update block height, now block height: {}", faucet_config_account.current_block_height);
         msg!("Update timestamp, now last gen block timestamp: {}", faucet_config_account.last_gen_block_timestamp);
 
@@ -163,17 +170,21 @@ pub mod token_faucet {
 
 #[derive(Accounts)]
 pub struct Initialize <'info> {
-    #[account(init, payer = user)]
+    #[account(
+        init_if_needed,
+        payer = user,
+        owner = id(),
+        rent_exempt = enforce
+    )]
     pub faucet_config_account: Account<'info, FaucetConfigAccount>,
 
     #[account()]
     pub user: Signer<'info>,
 
-    #[account(constraint = token_program.key == &token::ID)]
+    #[account(address = token::ID @ TokenFaucetError::InvalidTokenProgram)]
     pub token_program: AccountInfo<'info>,
 
     #[account(mut)]
-
     pub token_mint: Account<'info, Mint>,
 
     pub token_authority: AccountInfo<'info>,
@@ -202,50 +213,70 @@ pub struct Initialize <'info> {
     pub system_program: Program<'info, System>,
 
     pub clock: Sysvar<'info, Clock>,
+
+    pub rent: Sysvar<'info, Rent>
 }
 
 #[derive(Accounts)]
 pub struct Drip<'info> {
 
-    #[account(mut)]
+    #[account(
+        mut,
+        owner = id() @TokenFaucetError::InvalidConfigOwner,
+        has_one = token_mint @TokenFaucetError::InvalidTokenMint,
+        has_one = token_authority @TokenFaucetError::InvalidTokenAuthority,
+        has_one = receiver_p2e_games @TokenFaucetError::InvalidReceiverTokenAccount,
+        has_one = receiver_community_games @TokenFaucetError::InvalidReceiverTokenAccount,
+        has_one = receiver_arena @TokenFaucetError::InvalidReceiverTokenAccount,
+        has_one = receiver_nft_mining @TokenFaucetError::InvalidReceiverTokenAccount,
+        has_one = receiver_liquidity_mining @TokenFaucetError::InvalidReceiverTokenAccount,
+        has_one = receiver_marketing_and_sales @TokenFaucetError::InvalidReceiverTokenAccount,
+        has_one = receiver_ecosystem @TokenFaucetError::InvalidReceiverTokenAccount,
+        constraint = faucet_config_account.magic == 0x544b4654 @TokenFaucetError::InvalidMagic,
+    )]  
     pub faucet_config_account: Account<'info, FaucetConfigAccount>,
 
-    #[account(constraint = token_program.key == &token::ID)]
+    #[account(address = token::ID @ TokenFaucetError::InvalidTokenProgram)]
     pub token_program: AccountInfo<'info>,
 
-    #[account(mut,constraint = token_mint.to_account_info().key == &faucet_config_account.token_mint)]
-
+    #[account(mut)]
     pub token_mint: Account<'info, Mint>,
 
-    #[account(constraint = token_authority.key == &faucet_config_account.token_authority)]
     pub token_authority: AccountInfo<'info>,
 
-    #[account(mut, constraint = receiver_p2e_games.key == &faucet_config_account.receiver_p2e_games)]
+    #[account(mut)]
     pub receiver_p2e_games: AccountInfo<'info>,
     
-    #[account(mut, constraint = receiver_community_games.key == &faucet_config_account.receiver_community_games)]
+    #[account(mut)]
     pub receiver_community_games:AccountInfo<'info>,
 
-    #[account(mut, constraint = receiver_arena.key == &faucet_config_account.receiver_arena)]
+    #[account(mut)]
     pub receiver_arena: AccountInfo<'info>,
 
-    #[account(mut, constraint = receiver_nft_mining.key == &faucet_config_account.receiver_nft_mining)]
+    #[account(mut)]
     pub receiver_nft_mining: AccountInfo<'info>,
 
-    #[account(mut, constraint = receiver_liquidity_mining.key == &faucet_config_account.receiver_liquidity_mining)]
+    #[account(mut)]
     pub receiver_liquidity_mining: AccountInfo<'info>,
 
-    #[account(mut, constraint = receiver_marketing_and_sales.key == &faucet_config_account.receiver_marketing_and_sales)]
+    #[account(mut)]
     pub receiver_marketing_and_sales: AccountInfo<'info>,
 
-    #[account(mut, constraint = receiver_ecosystem.key == &faucet_config_account.receiver_ecosystem)]
+    #[account(mut)]
     pub receiver_ecosystem: AccountInfo<'info>,
 
-    pub clock: Sysvar<'info, Clock>,
+    pub clock: Sysvar<'info, Clock>
 }
 
 #[account]
 pub struct FaucetConfigAccount {
+    pub magic: u32,
+    pub nonce: u8,
+    pub current_block_height: u64,
+    pub next_production_reduction_block_height: u64,
+    pub last_gen_block_timestamp: i64,
+    pub coin_nums_per_block: u64,
+
     pub token_program: Pubkey,
     pub token_mint: Pubkey,
     pub token_authority: Pubkey,
@@ -256,13 +287,7 @@ pub struct FaucetConfigAccount {
     pub receiver_nft_mining: Pubkey,
     pub receiver_liquidity_mining: Pubkey,
     pub receiver_marketing_and_sales: Pubkey,
-    pub receiver_ecosystem: Pubkey,
-    
-    pub nonce: u8,
-    pub current_block_height: u64,
-    pub next_production_reduction_block_height: u64,
-    pub last_gen_block_timestamp: i64,
-    pub coin_nums_per_block: u64,
+    pub receiver_ecosystem: Pubkey
 }
 
 impl Default for FaucetConfigAccount {
@@ -300,11 +325,25 @@ impl<'info> Drip<'info> {
 }
 
 #[error]
-pub enum FaucetError {
-    #[msg("This is an error message that contain invalid params")]
+pub enum TokenFaucetError {
+    #[msg("This is an error message that contain invalid params.")]
     InvalidParamError,
-    #[msg("Insufficient interval to generate a block")]
+    #[msg("Insufficient interval to generate a block.")]
     InsufficientIntervalError,
-    #[msg("Token Supply has reached the max limit")]
+    #[msg("Token Supply has reached the max limit.")]
     TotalSupplyLimit,
+    #[msg("Config account is invalid.")]
+    InvalidConfigAccount,
+    #[msg("Invalid magic number.")]
+    InvalidMagic,
+    #[msg("Invalid config owner.")]
+    InvalidConfigOwner,
+    #[msg("Invalid token receiver account.")]
+    InvalidReceiverTokenAccount,
+    #[msg("Invalid token authority.")]
+    InvalidTokenAuthority,
+    #[msg("Invalid token mint.")]
+    InvalidTokenMint,
+    #[msg("Invalid token program.")]
+    InvalidTokenProgram,
 }

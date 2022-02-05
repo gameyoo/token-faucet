@@ -7,10 +7,11 @@ import {
 } from '@project-serum/common';
 import assert from 'assert';
 
-import { ASSOCIATED_TOKEN_PROGRAM_ID, Token, TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { ASSOCIATED_TOKEN_PROGRAM_ID, Token, TOKEN_PROGRAM_ID, u64 } from '@solana/spl-token';
 import { PublicKey, LAMPORTS_PER_SOL, Commitment } from '@solana/web3.js';
 
-const { SystemProgram } = anchor.web3;
+const { SystemProgram, SYSVAR_RENT_PUBKEY } = anchor.web3;
+const magic = 0x544b4654;
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
@@ -115,7 +116,8 @@ describe('token-faucet', () => {
           receiverMarketingAndSales: associated_token_account_of_receiver_marketing_and_sales,
           receiverEcosystem: associated_token_account_of_receiver_ecosystem,
           systemProgram: SystemProgram.programId,
-          clock: anchor.web3.SYSVAR_CLOCK_PUBKEY
+          clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+          rent: SYSVAR_RENT_PUBKEY,
         },
         signers: [faucetConfig],
       }
@@ -127,165 +129,165 @@ describe('token-faucet', () => {
 
       //console.log("config:\n", faucetConfigAccount);
 
-      assert.strictEqual(
-        faucetConfigAccount.tokenProgram.toBase58(),
-        TokenInstructions.TOKEN_PROGRAM_ID.toBase58()
-      );
+      // assert.strictEqual(
+      //   faucetConfigAccount.tokenProgram.toBase58(),
+      //   TokenInstructions.TOKEN_PROGRAM_ID.toBase58()
+      // );
 
-      assert.strictEqual(
-        faucetConfigAccount.tokenMint.toBase58(),
-        tokenMint.toBase58()
-      );
+      // assert.strictEqual(
+      //   faucetConfigAccount.tokenMint.toBase58(),
+      //   tokenMint.toBase58()
+      // );
 
-      assert.strictEqual(
-        faucetConfigAccount.tokenAuthority.toBase58(),
-        tokenAuthority.toBase58()
-      );
+      // assert.strictEqual(
+      //   faucetConfigAccount.tokenAuthority.toBase58(),
+      //   tokenAuthority.toBase58()
+      // );
 
-      assert.strictEqual(
-        faucetConfigAccount.receiverP2EGames.toBase58(),
-        associated_token_account_of_receiver_p2e_games.toBase58()
-      );
+      // assert.strictEqual(
+      //   faucetConfigAccount.receiverP2eGames.toBase58(),
+      //   associated_token_account_of_receiver_p2e_games.toBase58()
+      // );
 
-      assert.strictEqual(
-        faucetConfigAccount.receiverCommunityGames.toBase58(),
-        associated_token_account_of_receiver_community_games.toBase58()
-      );
+      // assert.strictEqual(
+      //   faucetConfigAccount.receiverCommunityGames.toBase58(),
+      //   associated_token_account_of_receiver_community_games.toBase58()
+      // );
 
-      assert.strictEqual(
-        faucetConfigAccount.receiverArena.toBase58(),
-        associated_token_account_of_receiver_arena.toBase58()
-      );
+      // assert.strictEqual(
+      //   faucetConfigAccount.receiverArena.toBase58(),
+      //   associated_token_account_of_receiver_arena.toBase58()
+      // );
 
-      assert.strictEqual(
-        faucetConfigAccount.receiverNftMining.toBase58(),
-        associated_token_account_of_receiver_nft_mining.toBase58()
-      );
+      // assert.strictEqual(
+      //   faucetConfigAccount.receiverNftMining.toBase58(),
+      //   associated_token_account_of_receiver_nft_mining.toBase58()
+      // );
 
-      assert.strictEqual(
-        faucetConfigAccount.receiverLiquidityMining.toBase58(),
-        associated_token_account_of_receiver_liquidity_mining.toBase58()
-      );
+      // assert.strictEqual(
+      //   faucetConfigAccount.receiverLiquidityMining.toBase58(),
+      //   associated_token_account_of_receiver_liquidity_mining.toBase58()
+      // );
 
-      assert.strictEqual(
-        faucetConfigAccount.receiverMarketingAndSales.toBase58(),
-        associated_token_account_of_receiver_marketing_and_sales.toBase58()
-      );
+      // assert.strictEqual(
+      //   faucetConfigAccount.receiverMarketingAndSales.toBase58(),
+      //   associated_token_account_of_receiver_marketing_and_sales.toBase58()
+      // );
 
-      assert.strictEqual(
-        faucetConfigAccount.receiverEcosystem.toBase58(),
-        associated_token_account_of_receiver_ecosystem.toBase58()
-      );
+      // assert.strictEqual(
+      //   faucetConfigAccount.receiverEcosystem.toBase58(),
+      //   associated_token_account_of_receiver_ecosystem.toBase58()
+      // );
 
-      assert.strictEqual(
-        faucetConfigAccount.nonce,
-        nonce
-      );
+      // assert.strictEqual(
+      //   faucetConfigAccount.nonce,
+      //   nonce
+      // );
     });
+    
+    // it("Initialize program state twice with the same account", async () => {
 
-    it("Initialize program state twice with the same account", async () => {
+    //   const tx = await program.rpc.initialize(
+    //     nonce, {
+    //     accounts: {
+    //       faucetConfigAccount: faucetConfig.publicKey,
+    //       user: provider.wallet.publicKey,
+    //       tokenProgram: TokenInstructions.TOKEN_PROGRAM_ID,
+    //       tokenMint: tokenMint,
+    //       tokenAuthority: tokenAuthority,
+    //       receiverP2eGames: associated_token_account_of_receiver_p2e_games,
+    //       receiverCommunityGames: associated_token_account_of_receiver_community_games,
+    //       receiverArena: associated_token_account_of_receiver_arena,
+    //       receiverNftMining: associated_token_account_of_receiver_nft_mining,
+    //       receiverLiquidityMining: associated_token_account_of_receiver_liquidity_mining,
+    //       receiverMarketingAndSales: associated_token_account_of_receiver_marketing_and_sales,
+    //       receiverEcosystem: associated_token_account_of_receiver_ecosystem,
+    //       systemProgram: SystemProgram.programId,
+    //       clock: anchor.web3.SYSVAR_CLOCK_PUBKEY
+    //     },
+    //     signers: [faucetConfig],
+    //   }
+    //   );
 
-      const tx = await program.rpc.initialize(
-        nonce, {
-        accounts: {
-          faucetConfigAccount: faucetConfig.publicKey,
-          user: provider.wallet.publicKey,
-          tokenProgram: TokenInstructions.TOKEN_PROGRAM_ID,
-          tokenMint: tokenMint,
-          tokenAuthority: tokenAuthority,
-          receiverP2eGames: associated_token_account_of_receiver_p2e_games,
-          receiverCommunityGames: associated_token_account_of_receiver_community_games,
-          receiverArena: associated_token_account_of_receiver_arena,
-          receiverNftMining: associated_token_account_of_receiver_nft_mining,
-          receiverLiquidityMining: associated_token_account_of_receiver_liquidity_mining,
-          receiverMarketingAndSales: associated_token_account_of_receiver_marketing_and_sales,
-          receiverEcosystem: associated_token_account_of_receiver_ecosystem,
-          systemProgram: SystemProgram.programId,
-          clock: anchor.web3.SYSVAR_CLOCK_PUBKEY
-        },
-        signers: [faucetConfig],
-      }
-      );
+    //   console.log("initialize transaction signature", tx);
 
-      console.log("initialize transaction signature", tx);
+    //   const tx1 = await program.rpc.initialize(
+    //     nonce, {
+    //     accounts: {
+    //       faucetConfigAccount: faucetConfig.publicKey,
+    //       user: provider.wallet.publicKey,
+    //       tokenProgram: TokenInstructions.TOKEN_PROGRAM_ID,
+    //       tokenMint: tokenMint,
+    //       tokenAuthority: tokenAuthority,
+    //       receiverP2eGames: associated_token_account_of_receiver_p2e_games,
+    //       receiverCommunityGames: associated_token_account_of_receiver_community_games,
+    //       receiverArena: associated_token_account_of_receiver_arena,
+    //       receiverNftMining: associated_token_account_of_receiver_nft_mining,
+    //       receiverLiquidityMining: associated_token_account_of_receiver_liquidity_mining,
+    //       receiverMarketingAndSales: associated_token_account_of_receiver_marketing_and_sales,
+    //       receiverEcosystem: associated_token_account_of_receiver_ecosystem,
+    //       systemProgram: SystemProgram.programId,
+    //       clock: anchor.web3.SYSVAR_CLOCK_PUBKEY
+    //     },
+    //     signers: [faucetConfig],
+    //   }
+    //   );
 
-      const tx1 = await program.rpc.initialize(
-        nonce, {
-        accounts: {
-          faucetConfigAccount: faucetConfig.publicKey,
-          user: provider.wallet.publicKey,
-          tokenProgram: TokenInstructions.TOKEN_PROGRAM_ID,
-          tokenMint: tokenMint,
-          tokenAuthority: tokenAuthority,
-          receiverP2eGames: associated_token_account_of_receiver_p2e_games,
-          receiverCommunityGames: associated_token_account_of_receiver_community_games,
-          receiverArena: associated_token_account_of_receiver_arena,
-          receiverNftMining: associated_token_account_of_receiver_nft_mining,
-          receiverLiquidityMining: associated_token_account_of_receiver_liquidity_mining,
-          receiverMarketingAndSales: associated_token_account_of_receiver_marketing_and_sales,
-          receiverEcosystem: associated_token_account_of_receiver_ecosystem,
-          systemProgram: SystemProgram.programId,
-          clock: anchor.web3.SYSVAR_CLOCK_PUBKEY
-        },
-        signers: [faucetConfig],
-      }
-      );
+    //   console.log("initialize transaction signature", tx1);
+    // });
 
-      console.log("initialize transaction signature", tx1);
-    });
+    // it("Initialize program state twice with the diff account", async () => {
 
-    it("Initialize program state twice with the diff account", async () => {
+    //   const tx = await program.rpc.initialize(
+    //     nonce, {
+    //     accounts: {
+    //       faucetConfigAccount: faucetConfig.publicKey,
+    //       user: provider.wallet.publicKey,
+    //       tokenProgram: TokenInstructions.TOKEN_PROGRAM_ID,
+    //       tokenMint: tokenMint,
+    //       tokenAuthority: tokenAuthority,
+    //       receiverP2eGames: associated_token_account_of_receiver_p2e_games,
+    //       receiverCommunityGames: associated_token_account_of_receiver_community_games,
+    //       receiverArena: associated_token_account_of_receiver_arena,
+    //       receiverNftMining: associated_token_account_of_receiver_nft_mining,
+    //       receiverLiquidityMining: associated_token_account_of_receiver_liquidity_mining,
+    //       receiverMarketingAndSales: associated_token_account_of_receiver_marketing_and_sales,
+    //       receiverEcosystem: associated_token_account_of_receiver_ecosystem,
+    //       systemProgram: SystemProgram.programId,
+    //       clock: anchor.web3.SYSVAR_CLOCK_PUBKEY
+    //     },
+    //     signers: [faucetConfig],
+    //   }
+    //   );
 
-      const tx = await program.rpc.initialize(
-        nonce, {
-        accounts: {
-          faucetConfigAccount: faucetConfig.publicKey,
-          user: provider.wallet.publicKey,
-          tokenProgram: TokenInstructions.TOKEN_PROGRAM_ID,
-          tokenMint: tokenMint,
-          tokenAuthority: tokenAuthority,
-          receiverP2eGames: associated_token_account_of_receiver_p2e_games,
-          receiverCommunityGames: associated_token_account_of_receiver_community_games,
-          receiverArena: associated_token_account_of_receiver_arena,
-          receiverNftMining: associated_token_account_of_receiver_nft_mining,
-          receiverLiquidityMining: associated_token_account_of_receiver_liquidity_mining,
-          receiverMarketingAndSales: associated_token_account_of_receiver_marketing_and_sales,
-          receiverEcosystem: associated_token_account_of_receiver_ecosystem,
-          systemProgram: SystemProgram.programId,
-          clock: anchor.web3.SYSVAR_CLOCK_PUBKEY
-        },
-        signers: [faucetConfig],
-      }
-      );
+    //   console.log("initialize transaction signature", tx);
 
-      console.log("initialize transaction signature", tx);
+    //   faucetConfig2 = anchor.web3.Keypair.generate();
 
-      faucetConfig2 = anchor.web3.Keypair.generate();
+    //   const tx1 = await program.rpc.initialize(
+    //     nonce, {
+    //     accounts: {
+    //       faucetConfigAccount: faucetConfig2.publicKey,
+    //       user: provider.wallet.publicKey,
+    //       tokenProgram: TokenInstructions.TOKEN_PROGRAM_ID,
+    //       tokenMint: tokenMint,
+    //       tokenAuthority: tokenAuthority,
+    //       receiverP2eGames: associated_token_account_of_receiver_p2e_games,
+    //       receiverCommunityGames: associated_token_account_of_receiver_community_games,
+    //       receiverArena: associated_token_account_of_receiver_arena,
+    //       receiverNftMining: associated_token_account_of_receiver_nft_mining,
+    //       receiverLiquidityMining: associated_token_account_of_receiver_liquidity_mining,
+    //       receiverMarketingAndSales: associated_token_account_of_receiver_marketing_and_sales,
+    //       receiverEcosystem: associated_token_account_of_receiver_ecosystem,
+    //       systemProgram: SystemProgram.programId,
+    //       clock: anchor.web3.SYSVAR_CLOCK_PUBKEY
+    //     },
+    //     signers: [faucetConfig2],
+    //   }
+    //   );
 
-      const tx1 = await program.rpc.initialize(
-        nonce, {
-        accounts: {
-          faucetConfigAccount: faucetConfig2.publicKey,
-          user: provider.wallet.publicKey,
-          tokenProgram: TokenInstructions.TOKEN_PROGRAM_ID,
-          tokenMint: tokenMint,
-          tokenAuthority: tokenAuthority,
-          receiverP2eGames: associated_token_account_of_receiver_p2e_games,
-          receiverCommunityGames: associated_token_account_of_receiver_community_games,
-          receiverArena: associated_token_account_of_receiver_arena,
-          receiverNftMining: associated_token_account_of_receiver_nft_mining,
-          receiverLiquidityMining: associated_token_account_of_receiver_liquidity_mining,
-          receiverMarketingAndSales: associated_token_account_of_receiver_marketing_and_sales,
-          receiverEcosystem: associated_token_account_of_receiver_ecosystem,
-          systemProgram: SystemProgram.programId,
-          clock: anchor.web3.SYSVAR_CLOCK_PUBKEY
-        },
-        signers: [faucetConfig2],
-      }
-      );
-
-      console.log("initialize transaction signature", tx1);
-    });
+    //   console.log("initialize transaction signature", tx1);
+    // });
 
   });
   
@@ -293,7 +295,7 @@ describe('token-faucet', () => {
 
     it("Drip once", async () => {
 
-      await sleep(3000);
+      await sleep(6000);
 
       const mintInfo = await getMintInfo(provider, tokenMint);
 
@@ -345,72 +347,141 @@ describe('token-faucet', () => {
       console.log("ecosystem associated_token: %s, amount: %d", associated_token_account_of_receiver_ecosystem.toBase58(), _associated_token_account_of_receiver_ecosystem.amount);
     });
 
-    it("Drip 100 times", async () => {
+    // it("Drip 100 times", async () => {
 
-      let i = 1;
+    //   let i = 1;
 
-      while (i <= 100) {
+    //   while (i <= 100) {
         
-        await sleep(3000);
+    //     await sleep(3000);
 
-        try {
+    //     try {
             
-          const mintInfo = await getMintInfo(provider, tokenMint);
+    //       const mintInfo = await getMintInfo(provider, tokenMint);
 
-          assert.strictEqual(
-            mintInfo.mintAuthority.toBase58(),
-            tokenAuthority.toBase58()
-          );
+    //       assert.strictEqual(
+    //         mintInfo.mintAuthority.toBase58(),
+    //         tokenAuthority.toBase58()
+    //       );
   
-          const tx = await program.rpc.drip({
-            accounts: {
-              faucetConfigAccount: faucetConfig.publicKey,
-              tokenProgram: TokenInstructions.TOKEN_PROGRAM_ID,
-              tokenMint: tokenMint,
-              tokenAuthority: mintInfo.mintAuthority,
-              receiverP2eGames: associated_token_account_of_receiver_p2e_games,
-              receiverCommunityGames: associated_token_account_of_receiver_community_games,
-              receiverArena: associated_token_account_of_receiver_arena,
-              receiverNftMining: associated_token_account_of_receiver_nft_mining,
-              receiverLiquidityMining: associated_token_account_of_receiver_liquidity_mining,
-              receiverMarketingAndSales: associated_token_account_of_receiver_marketing_and_sales,
-              receiverEcosystem: associated_token_account_of_receiver_ecosystem,
-              clock: anchor.web3.SYSVAR_CLOCK_PUBKEY
-            },
-            signers: [
-            ],
-          });
+    //       const tx = await program.rpc.drip({
+    //         accounts: {
+    //           faucetConfigAccount: faucetConfig.publicKey,
+    //           tokenProgram: TokenInstructions.TOKEN_PROGRAM_ID,
+    //           tokenMint: tokenMint,
+    //           tokenAuthority: mintInfo.mintAuthority,
+    //           receiverP2eGames: associated_token_account_of_receiver_p2e_games,
+    //           receiverCommunityGames: associated_token_account_of_receiver_community_games,
+    //           receiverArena: associated_token_account_of_receiver_arena,
+    //           receiverNftMining: associated_token_account_of_receiver_nft_mining,
+    //           receiverLiquidityMining: associated_token_account_of_receiver_liquidity_mining,
+    //           receiverMarketingAndSales: associated_token_account_of_receiver_marketing_and_sales,
+    //           receiverEcosystem: associated_token_account_of_receiver_ecosystem,
+    //           clock: anchor.web3.SYSVAR_CLOCK_PUBKEY
+    //         },
+    //         signers: [
+    //         ],
+    //       });
   
-          console.log("drip transaction signature: %s, index: %d ", tx, i);
+    //       console.log("drip transaction signature: %s, index: %d ", tx, i);
   
-          let _associated_token_account_of_receiver_p2e_games = await getTokenAccount(provider, associated_token_account_of_receiver_p2e_games);
-          console.log("p2e_games associated_token: %s, amount: %d", associated_token_account_of_receiver_p2e_games.toBase58(), _associated_token_account_of_receiver_p2e_games.amount);
+    //       let _associated_token_account_of_receiver_p2e_games = await getTokenAccount(provider, associated_token_account_of_receiver_p2e_games);
+    //       console.log("p2e_games associated_token: %s, amount: %d", associated_token_account_of_receiver_p2e_games.toBase58(), _associated_token_account_of_receiver_p2e_games.amount);
   
-          let _associated_token_account_of_receiver_community_games = await getTokenAccount(provider, associated_token_account_of_receiver_community_games);
-          console.log("community_games associated_token: %s, amount: %d", associated_token_account_of_receiver_community_games.toBase58(), _associated_token_account_of_receiver_community_games.amount);
+    //       let _associated_token_account_of_receiver_community_games = await getTokenAccount(provider, associated_token_account_of_receiver_community_games);
+    //       console.log("community_games associated_token: %s, amount: %d", associated_token_account_of_receiver_community_games.toBase58(), _associated_token_account_of_receiver_community_games.amount);
   
-          let _associated_token_account_of_receiver_arena = await getTokenAccount(provider, associated_token_account_of_receiver_arena);
-          console.log("arena associated_token: %s, amount: %d", associated_token_account_of_receiver_arena.toBase58(), _associated_token_account_of_receiver_arena.amount);
+    //       let _associated_token_account_of_receiver_arena = await getTokenAccount(provider, associated_token_account_of_receiver_arena);
+    //       console.log("arena associated_token: %s, amount: %d", associated_token_account_of_receiver_arena.toBase58(), _associated_token_account_of_receiver_arena.amount);
   
-          let _associated_token_account_of_receiver_nft_mining = await getTokenAccount(provider, associated_token_account_of_receiver_nft_mining);
-          console.log("nft_mining associated_token: %s, amount: %d", associated_token_account_of_receiver_nft_mining.toBase58(), _associated_token_account_of_receiver_nft_mining.amount);
+    //       let _associated_token_account_of_receiver_nft_mining = await getTokenAccount(provider, associated_token_account_of_receiver_nft_mining);
+    //       console.log("nft_mining associated_token: %s, amount: %d", associated_token_account_of_receiver_nft_mining.toBase58(), _associated_token_account_of_receiver_nft_mining.amount);
   
-          let _associated_token_account_of_receiver_liquidity_mining = await getTokenAccount(provider, associated_token_account_of_receiver_liquidity_mining);
-          console.log("liquidity_mining associated_token: %s, amount: %d", associated_token_account_of_receiver_liquidity_mining.toBase58(), _associated_token_account_of_receiver_liquidity_mining.amount);
+    //       let _associated_token_account_of_receiver_liquidity_mining = await getTokenAccount(provider, associated_token_account_of_receiver_liquidity_mining);
+    //       console.log("liquidity_mining associated_token: %s, amount: %d", associated_token_account_of_receiver_liquidity_mining.toBase58(), _associated_token_account_of_receiver_liquidity_mining.amount);
   
-          let _associated_token_account_of_receiver_marketing_and_sales = await getTokenAccount(provider, associated_token_account_of_receiver_marketing_and_sales);
-          console.log("marketing_and_sales associated_token: %s, amount: %d", associated_token_account_of_receiver_marketing_and_sales.toBase58(), _associated_token_account_of_receiver_marketing_and_sales.amount);
+    //       let _associated_token_account_of_receiver_marketing_and_sales = await getTokenAccount(provider, associated_token_account_of_receiver_marketing_and_sales);
+    //       console.log("marketing_and_sales associated_token: %s, amount: %d", associated_token_account_of_receiver_marketing_and_sales.toBase58(), _associated_token_account_of_receiver_marketing_and_sales.amount);
   
-          let _associated_token_account_of_receiver_ecosystem = await getTokenAccount(provider, associated_token_account_of_receiver_ecosystem);
-          console.log("ecosystem associated_token: %s, amount: %d\r\n\r\n", associated_token_account_of_receiver_ecosystem.toBase58(), _associated_token_account_of_receiver_ecosystem.amount);
+    //       let _associated_token_account_of_receiver_ecosystem = await getTokenAccount(provider, associated_token_account_of_receiver_ecosystem);
+    //       console.log("ecosystem associated_token: %s, amount: %d\r\n\r\n", associated_token_account_of_receiver_ecosystem.toBase58(), _associated_token_account_of_receiver_ecosystem.amount);
 
-        } catch (error) {
-            console.log(error);
-        }
+    //     } catch (error) {
+    //         console.log(error);
+    //     }
 
-        i++;
-      }
-    });
+    //     i++;
+    //   }
+    // });
+
+    // it("Evil Drip 100 times", async () => {
+
+    //   let i = 1;
+
+    //   while (i <= 100) {
+        
+    //     await sleep(3000);
+
+    //     try {
+            
+    //       const mintInfo = await getMintInfo(provider, tokenMint);
+
+    //       assert.strictEqual(
+    //         mintInfo.mintAuthority.toBase58(),
+    //         tokenAuthority.toBase58()
+    //       );
+          
+    //       let fakefaucetConfig = anchor.web3.Keypair.generate();
+  
+    //       const tx = await program.rpc.drip({
+    //         accounts: {
+    //           faucetConfigAccount: faucetConfig.publicKey,
+    //           tokenProgram: TokenInstructions.TOKEN_PROGRAM_ID,
+    //           tokenMint: tokenMint,
+    //           tokenAuthority: mintInfo.mintAuthority,
+    //           receiverP2eGames: associated_token_account_of_receiver_p2e_games,
+    //           receiverCommunityGames: associated_token_account_of_receiver_community_games,
+    //           receiverArena: associated_token_account_of_receiver_arena,
+    //           receiverNftMining: associated_token_account_of_receiver_nft_mining,
+    //           receiverLiquidityMining: associated_token_account_of_receiver_liquidity_mining,
+    //           receiverMarketingAndSales: associated_token_account_of_receiver_marketing_and_sales,
+    //           receiverEcosystem: associated_token_account_of_receiver_ecosystem,
+    //           clock: anchor.web3.SYSVAR_CLOCK_PUBKEY
+    //         },
+    //         signers: [
+    //         ],
+    //       });
+  
+    //       console.log("drip transaction signature: %s, index: %d ", tx, i);
+  
+    //       let _associated_token_account_of_receiver_p2e_games = await getTokenAccount(provider, associated_token_account_of_receiver_p2e_games);
+    //       console.log("p2e_games associated_token: %s, amount: %d", associated_token_account_of_receiver_p2e_games.toBase58(), _associated_token_account_of_receiver_p2e_games.amount);
+  
+    //       let _associated_token_account_of_receiver_community_games = await getTokenAccount(provider, associated_token_account_of_receiver_community_games);
+    //       console.log("community_games associated_token: %s, amount: %d", associated_token_account_of_receiver_community_games.toBase58(), _associated_token_account_of_receiver_community_games.amount);
+  
+    //       let _associated_token_account_of_receiver_arena = await getTokenAccount(provider, associated_token_account_of_receiver_arena);
+    //       console.log("arena associated_token: %s, amount: %d", associated_token_account_of_receiver_arena.toBase58(), _associated_token_account_of_receiver_arena.amount);
+  
+    //       let _associated_token_account_of_receiver_nft_mining = await getTokenAccount(provider, associated_token_account_of_receiver_nft_mining);
+    //       console.log("nft_mining associated_token: %s, amount: %d", associated_token_account_of_receiver_nft_mining.toBase58(), _associated_token_account_of_receiver_nft_mining.amount);
+  
+    //       let _associated_token_account_of_receiver_liquidity_mining = await getTokenAccount(provider, associated_token_account_of_receiver_liquidity_mining);
+    //       console.log("liquidity_mining associated_token: %s, amount: %d", associated_token_account_of_receiver_liquidity_mining.toBase58(), _associated_token_account_of_receiver_liquidity_mining.amount);
+  
+    //       let _associated_token_account_of_receiver_marketing_and_sales = await getTokenAccount(provider, associated_token_account_of_receiver_marketing_and_sales);
+    //       console.log("marketing_and_sales associated_token: %s, amount: %d", associated_token_account_of_receiver_marketing_and_sales.toBase58(), _associated_token_account_of_receiver_marketing_and_sales.amount);
+  
+    //       let _associated_token_account_of_receiver_ecosystem = await getTokenAccount(provider, associated_token_account_of_receiver_ecosystem);
+    //       console.log("ecosystem associated_token: %s, amount: %d\r\n\r\n", associated_token_account_of_receiver_ecosystem.toBase58(), _associated_token_account_of_receiver_ecosystem.amount);
+
+    //     } catch (error) {
+    //         console.log(error);
+    //     }
+
+    //     i++;
+    //   }
+    // });
 
   });
 });
