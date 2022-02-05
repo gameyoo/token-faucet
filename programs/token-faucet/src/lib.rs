@@ -32,6 +32,16 @@ pub mod token_faucet {
         msg!("program id:{}", ctx.program_id);
         msg!("config acount ower:{}", ctx.accounts.faucet_config_account.to_account_info().owner);
 
+        if ctx.accounts.receiver_p2e_games.data_is_empty() ||
+           ctx.accounts.receiver_community_games.data_is_empty() || 
+           ctx.accounts.receiver_arena.data_is_empty() || 
+           ctx.accounts.receiver_nft_mining.data_is_empty() || 
+           ctx.accounts.receiver_liquidity_mining.data_is_empty() || 
+           ctx.accounts.receiver_marketing_and_sales.data_is_empty() || 
+           ctx.accounts.receiver_ecosystem.data_is_empty(){
+            return Err(TokenFaucetError::InvalidAssociatedTokenAccount.into());
+        }
+
         let faucet_config_account = &mut ctx.accounts.faucet_config_account;
         faucet_config_account.token_program = *ctx.accounts.token_program.key;
         faucet_config_account.token_mint = *ctx.accounts.token_mint.to_account_info().key;
@@ -184,30 +194,22 @@ pub struct Initialize <'info> {
     #[account(address = token::ID @ TokenFaucetError::InvalidTokenProgram)]
     pub token_program: AccountInfo<'info>,
 
-    #[account(mut)]
     pub token_mint: Account<'info, Mint>,
 
     pub token_authority: AccountInfo<'info>,
 
-    #[account(mut)]
     pub receiver_p2e_games: AccountInfo<'info>,
 
-    #[account(mut)]
     pub receiver_community_games: AccountInfo<'info>,
 
-    #[account(mut)]
     pub receiver_arena: AccountInfo<'info>,
 
-    #[account(mut)]
     pub receiver_nft_mining: AccountInfo<'info>,
 
-    #[account(mut)]
     pub receiver_liquidity_mining: AccountInfo<'info>,
 
-    #[account(mut)]
     pub receiver_marketing_and_sales: AccountInfo<'info>,
 
-    #[account(mut)]
     pub receiver_ecosystem: AccountInfo<'info>,
 
     pub system_program: Program<'info, System>,
@@ -340,6 +342,8 @@ pub enum TokenFaucetError {
     InvalidConfigOwner,
     #[msg("Invalid token receiver account.")]
     InvalidReceiverTokenAccount,
+    #[msg("Invalid token associated account.")]
+    InvalidAssociatedTokenAccount,
     #[msg("Invalid token authority.")]
     InvalidTokenAuthority,
     #[msg("Invalid token mint.")]
