@@ -1,17 +1,14 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Mint, SetAuthority};
-use spl_token::instruction::AuthorityType;
-use solana_program::program_option::COption;
+use anchor_spl::token::{self, Mint};
 use std::convert::TryFrom;
 
 declare_id!("3Yi5DE6ZfyS8vFRRMnuM4kE5XSvtmFgNE3wMHwpdzsHK");
 
 #[constant]
-pub const INIT_PRODUCTION_REDUCTION_BLOCK_HEIGHT: u64 = 2_625_000;
 pub const DECIMALS: u8 = 9;
 pub const BLOCK_GEN_RATE: u8 = 3;
 pub const MAX_TOTAL_SUPPLY : u64 = 210_000_000 * 10_u64.pow(DECIMALS as u32);
-pub const INIT_COIN_NUMS_PER_BLOCK: u64 = 30 * 10_u64.pow(DECIMALS as u32);  // 300_000_000_000
+pub const INIT_COIN_NUMS_PER_BLOCK: u64 = 3 * 10_u64.pow(DECIMALS as u32);  // 30_000_000_000
 pub const P2E_GAMES_PERCENTAGE: f64 = 0.13333333333333333333333333333333;
 pub const COMMUNITY_GAMES_PERCENTAGE: f64 = 0.13333333333333333333333333333333;
 pub const ARENA_PERCENTAGE: f64 = 0.13333333333333333333333333333333;
@@ -58,7 +55,6 @@ pub mod token_faucet {
         faucet_config_account.magic = 0x544b4654;
         faucet_config_account.nonce = nonce;
         faucet_config_account.current_block_height = 0;
-        faucet_config_account.next_production_reduction_block_height = INIT_PRODUCTION_REDUCTION_BLOCK_HEIGHT;
         faucet_config_account.last_gen_block_timestamp = ctx.accounts.clock.unix_timestamp;
         faucet_config_account.coin_nums_per_block = INIT_COIN_NUMS_PER_BLOCK;
 
@@ -75,7 +71,6 @@ pub mod token_faucet {
         msg!("Magic: 0x{:x}", faucet_config_account.magic);
         msg!("Nonce: {}", faucet_config_account.nonce);
         msg!("Current block height: {}", faucet_config_account.current_block_height);
-        msg!("Next production reduction block height: {}", faucet_config_account.next_production_reduction_block_height);
         msg!("Last gen block timestamp: {}", faucet_config_account.last_gen_block_timestamp);
         msg!("Coin nums per block: {}\n", faucet_config_account.coin_nums_per_block);
         
@@ -90,21 +85,15 @@ pub mod token_faucet {
         let current_time = ctx.accounts.clock.unix_timestamp;
         
         msg!("Current Token Supply: {}", ctx.accounts.token_mint.supply);
-        if ctx.accounts.token_mint.supply >= MAX_TOTAL_SUPPLY {
-
-            if ctx.accounts.token_mint.mint_authority != COption::None {
-
-                token::set_authority(
-                    ctx.accounts.into_set_authority_context(),
-                    AuthorityType::MintTokens,
-                    None,
-                )?;
-            }
-            
+        if ctx.accounts.token_mint.supply >= MAX_TOTAL_SUPPLY {            
             return Err(TokenFaucetError::TotalSupplyLimit.into());
         }
 
         let faucet_config_account = &mut ctx.accounts.faucet_config_account;
+        if current_time < faucet_config_account.last_gen_block_timestamp {
+            return Err(TokenFaucetError::InvalidUnixTimestamp.into());
+        }
+        
         let intervals = current_time.checked_sub(faucet_config_account.last_gen_block_timestamp).unwrap();
         msg!("Called Interval: {}s", intervals);
         if intervals < i64::try_from(BLOCK_GEN_RATE).unwrap() {
@@ -116,30 +105,10 @@ pub mod token_faucet {
 
         let gen_block_nums = (u64::try_from(intervals).unwrap()).checked_div(u64::try_from(BLOCK_GEN_RATE).unwrap()).unwrap();
 
-        let mut distribution_amounts = gen_block_nums.checked_mul(faucet_config_account.coin_nums_per_block).unwrap();
+        let distribution_amounts = gen_block_nums.checked_mul(faucet_config_account.coin_nums_per_block).unwrap();
 
         msg!("Current block height: {}", faucet_config_account.current_block_height);
         msg!("Current coin number of per block: {}", faucet_config_account.coin_nums_per_block);
-        msg!("Current next production reduction block height: {}", faucet_config_account.next_production_reduction_block_height);
-
-        if (faucet_config_account.current_block_height).checked_add(gen_block_nums).unwrap()  >= faucet_config_account.next_production_reduction_block_height {
-
-            if (faucet_config_account.current_block_height).checked_add(gen_block_nums).unwrap() > faucet_config_account.next_production_reduction_block_height {
-
-                msg!("Intervals cross production reduction");
-
-                let after_production_reduction_block_nums  = faucet_config_account.current_block_height.checked_add(gen_block_nums).unwrap().checked_sub(faucet_config_account.next_production_reduction_block_height).unwrap();
-                let before_production_reduction_block_nums: u64 = gen_block_nums.checked_sub(after_production_reduction_block_nums).unwrap();
-                distribution_amounts = before_production_reduction_block_nums.checked_mul(faucet_config_account.coin_nums_per_block).unwrap().checked_add(after_production_reduction_block_nums.checked_mul(faucet_config_account.coin_nums_per_block.checked_div(2).unwrap()).unwrap()).unwrap();
-            }
-
-            msg!("Perform production reduction...");
-            faucet_config_account.coin_nums_per_block = faucet_config_account.coin_nums_per_block.checked_div(2).unwrap();
-            faucet_config_account.next_production_reduction_block_height = faucet_config_account.next_production_reduction_block_height.checked_mul(2).unwrap();
-            msg!("Now coin number of per block: {}", faucet_config_account.coin_nums_per_block);
-            msg!("Now next production reduction block height: {}", faucet_config_account.next_production_reduction_block_height);
-        }
-
         msg!("This time distribution token total amounts: {}", distribution_amounts);
 
         let receiver_p2e_games_amount: u64 = ((distribution_amounts as f64) * P2E_GAMES_PERCENTAGE) as u64;
@@ -275,7 +244,6 @@ pub struct FaucetConfigAccount {
     pub magic: u32,
     pub nonce: u8,
     pub current_block_height: u64,
-    pub next_production_reduction_block_height: u64,
     pub last_gen_block_timestamp: i64,
     pub coin_nums_per_block: u64,
 
@@ -316,14 +284,6 @@ impl<'info> Drip<'info> {
 
         Ok(())
     }
-
-    fn into_set_authority_context(&mut self) -> CpiContext<'_, '_, '_, 'info, SetAuthority<'info>>{
-        let cpi_accounts = SetAuthority {
-            account_or_mint: self.token_mint.to_account_info().clone(),
-            current_authority: self.token_authority.clone(),
-        };
-        CpiContext::new(self.token_program.clone(), cpi_accounts)
-    }
 }
 
 #[error]
@@ -350,4 +310,6 @@ pub enum TokenFaucetError {
     InvalidTokenMint,
     #[msg("Invalid token program.")]
     InvalidTokenProgram,
+    #[msg("Invalid unix timestamp.")]
+    InvalidUnixTimestamp
 }
