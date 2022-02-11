@@ -28,6 +28,23 @@ async function createTokenAccount(provider, mint, owner) {
   return vault.publicKey;
 }
 
+async function createAssociatedTokenAccount(provider, mint, associatedAccount, owner, payer, signer) {
+
+  const tx = new anchor.web3.Transaction();
+  tx.add(
+    await Token.createAssociatedTokenAccountInstruction(
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+      TOKEN_PROGRAM_ID,
+      mint,
+      associatedAccount,
+      owner,
+      payer
+    )
+  );
+  await provider.send(tx, [signer]);
+  return associatedAccount;
+}
+
 describe('token-faucet', () => {
 
   // Configure the client to use the local cluster.
@@ -60,6 +77,7 @@ describe('token-faucet', () => {
   let nonce: number;
 
   before(async () => {
+    console.log("\nBefore:");
     receiver_p2e_games = anchor.web3.Keypair.generate();
     receiver_community_games = anchor.web3.Keypair.generate();
     receiver_arena = anchor.web3.Keypair.generate();
@@ -79,14 +97,134 @@ describe('token-faucet', () => {
       nonce);
 
     tokenMint = await createMint(provider, tokenAuthority, tokenDecimals);
-    
-    associated_token_account_of_receiver_p2e_games = await createTokenAccount(provider, tokenMint, receiver_p2e_games.publicKey);
-    associated_token_account_of_receiver_community_games = await createTokenAccount(provider, tokenMint, receiver_community_games.publicKey);
-    associated_token_account_of_receiver_arena = await createTokenAccount(provider, tokenMint, receiver_arena.publicKey);
-    associated_token_account_of_receiver_nft_mining = await createTokenAccount(provider, tokenMint, receiver_nft_mining.publicKey);
-    associated_token_account_of_receiver_liquidity_mining = await createTokenAccount(provider, tokenMint, receiver_liquidity_mining.publicKey);
-    associated_token_account_of_receiver_marketing_and_sales = await createTokenAccount(provider, tokenMint, receiver_marketing_and_sales.publicKey);
-    associated_token_account_of_receiver_ecosystem = await createTokenAccount(provider, tokenMint, receiver_ecosystem.publicKey);
+        
+    associated_token_account_of_receiver_p2e_games = await Token.getAssociatedTokenAddress(
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+      TOKEN_PROGRAM_ID,
+      tokenMint,
+      receiver_p2e_games.publicKey
+    );
+
+    associated_token_account_of_receiver_community_games = await Token.getAssociatedTokenAddress(
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+      TOKEN_PROGRAM_ID,
+      tokenMint,
+      receiver_community_games.publicKey
+    );
+
+    associated_token_account_of_receiver_arena = await Token.getAssociatedTokenAddress(
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+      TOKEN_PROGRAM_ID,
+      tokenMint,
+      receiver_arena.publicKey
+    );
+
+    associated_token_account_of_receiver_nft_mining = await Token.getAssociatedTokenAddress(
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+      TOKEN_PROGRAM_ID,
+      tokenMint,
+      receiver_nft_mining.publicKey
+    );
+
+    associated_token_account_of_receiver_liquidity_mining = await Token.getAssociatedTokenAddress(
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+      TOKEN_PROGRAM_ID,
+      tokenMint,
+      receiver_liquidity_mining.publicKey
+    );
+
+    associated_token_account_of_receiver_marketing_and_sales = await Token.getAssociatedTokenAddress(
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+      TOKEN_PROGRAM_ID,
+      tokenMint,
+      receiver_marketing_and_sales.publicKey
+    );
+
+    associated_token_account_of_receiver_ecosystem = await Token.getAssociatedTokenAddress(
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+      TOKEN_PROGRAM_ID,
+      tokenMint,
+      receiver_ecosystem.publicKey
+    );
+
+    await createAssociatedTokenAccount(
+      provider,
+      tokenMint,
+      associated_token_account_of_receiver_p2e_games,
+      receiver_p2e_games.publicKey,
+      provider.wallet.publicKey,
+      provider.wallet.payer
+    );
+
+    await createAssociatedTokenAccount(
+      provider,
+      tokenMint,
+      associated_token_account_of_receiver_community_games,
+      receiver_community_games.publicKey,
+      provider.wallet.publicKey,
+      provider.wallet.payer
+    );
+
+    await createAssociatedTokenAccount(
+      provider,
+      tokenMint,
+      associated_token_account_of_receiver_arena,
+      receiver_arena.publicKey,
+      provider.wallet.publicKey,
+      provider.wallet.payer
+    );
+
+    await createAssociatedTokenAccount(
+      provider,
+      tokenMint,
+      associated_token_account_of_receiver_nft_mining,
+      receiver_nft_mining.publicKey,
+      provider.wallet.publicKey,
+      provider.wallet.payer
+    );
+
+    await createAssociatedTokenAccount(
+      provider,
+      tokenMint,
+      associated_token_account_of_receiver_liquidity_mining,
+      receiver_liquidity_mining.publicKey,
+      provider.wallet.publicKey,
+      provider.wallet.payer
+    );
+
+    await createAssociatedTokenAccount(
+      provider,
+      tokenMint,
+      associated_token_account_of_receiver_marketing_and_sales,
+      receiver_marketing_and_sales.publicKey,
+      provider.wallet.publicKey,
+      provider.wallet.payer
+    );
+
+    await createAssociatedTokenAccount(
+      provider,
+      tokenMint,
+      associated_token_account_of_receiver_ecosystem,
+      receiver_ecosystem.publicKey,
+      provider.wallet.publicKey,
+      provider.wallet.payer
+    );
+
+    console.log("mint", tokenMint.toBase58());
+    console.log("receiver_p2e_games", receiver_p2e_games.publicKey.toBase58());
+    console.log("receiver_community_games", receiver_community_games.publicKey.toBase58());
+    console.log("receiver_arena", receiver_arena.publicKey.toBase58());
+    console.log("receiver_nft_mining", receiver_nft_mining.publicKey.toBase58());
+    console.log("receiver_liquidity_mining", receiver_liquidity_mining.publicKey.toBase58());
+    console.log("receiver_marketing_and_sales", receiver_marketing_and_sales.publicKey.toBase58());
+    console.log("receiver_ecosystem", receiver_ecosystem.publicKey.toBase58());
+    console.log("associated_token_account_of_receiver_p2e_games", associated_token_account_of_receiver_p2e_games.toBase58());
+    console.log("associated_token_account_of_receiver_community_games", associated_token_account_of_receiver_community_games.toBase58());
+    console.log("associated_token_account_of_receiver_arena", associated_token_account_of_receiver_arena.toBase58());
+    console.log("associated_token_account_of_receiver_nft_mining", associated_token_account_of_receiver_nft_mining.toBase58());
+    console.log("associated_token_account_of_receiver_liquidity_mining", associated_token_account_of_receiver_liquidity_mining.toBase58());
+    console.log("associated_token_account_of_receiver_marketing_and_sales", associated_token_account_of_receiver_marketing_and_sales.toBase58());
+    console.log("associated_token_account_of_receiver_ecosystem", associated_token_account_of_receiver_ecosystem.toBase58());
   });
 
   describe("#Initialize", () => {
