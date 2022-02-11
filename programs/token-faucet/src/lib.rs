@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint};
 use std::convert::TryFrom;
 
-declare_id!("3Yi5DE6ZfyS8vFRRMnuM4kE5XSvtmFgNE3wMHwpdzsHK");
+declare_id!("E7WGku7aoDV9GHh3cagcrraktA4nETXuCearm1WZvMNU");
 
 #[constant]
 pub const DECIMALS: u8 = 9;
@@ -36,7 +36,7 @@ pub mod token_faucet {
            ctx.accounts.receiver_liquidity_mining.data_is_empty() || 
            ctx.accounts.receiver_marketing_and_sales.data_is_empty() || 
            ctx.accounts.receiver_ecosystem.data_is_empty(){
-            return Err(TokenFaucetError::InvalidAssociatedTokenAccount.into());
+            return Err(TokenFaucetError::NotInitilizedAssociatedTokenAccount.into());
         }
 
         let faucet_config_account = &mut ctx.accounts.faucet_config_account;
@@ -302,8 +302,8 @@ pub enum TokenFaucetError {
     InvalidConfigOwner,
     #[msg("Invalid token receiver account.")]
     InvalidReceiverTokenAccount,
-    #[msg("Invalid token associated account.")]
-    InvalidAssociatedTokenAccount,
+    #[msg("Not initilized token associated account.")]
+    NotInitilizedAssociatedTokenAccount,
     #[msg("Invalid token authority.")]
     InvalidTokenAuthority,
     #[msg("Invalid token mint.")]
