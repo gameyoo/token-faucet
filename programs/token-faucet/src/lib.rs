@@ -9,12 +9,10 @@ pub const DECIMALS: u8 = 9;
 pub const BLOCK_GEN_RATE: u8 = 3;
 pub const MAX_TOTAL_SUPPLY : u64 = 210_000_000 * 10_u64.pow(DECIMALS as u32);
 pub const INIT_COIN_NUMS_PER_BLOCK: u64 = 3 * 10_u64.pow(DECIMALS as u32);  // 30_000_000_000
-pub const P2E_GAMES_PERCENTAGE: f64 = 0.13333333333333333333333333333333;
-pub const COMMUNITY_GAMES_PERCENTAGE: f64 = 0.13333333333333333333333333333333;
-pub const ARENA_PERCENTAGE: f64 = 0.13333333333333333333333333333333;
-pub const NFT_MINING_PERCENTAGE: f64 = 0.16;
-pub const LIQUIDITY_MINING_PERCENTAGE: f64 = 0.26666666666666666666666666666667;
-pub const MARKETING_AND_SALES_PERCENTAGE: f64 = 0.04;
+pub const ARENA_PERCENTAGE: f64 = 0.24;
+pub const NFT_MINING_PERCENTAGE: f64 = 0.36;
+pub const LIQUIDITY_MINING_PERCENTAGE: f64 = 0.22666666666666666666666666666667;
+pub const MARKETING_PERCENTAGE: f64 = 0.04;
 pub const ECOSYSTEM_PERCENTAGE: f64 = 0.13333333333333333333333333333333;
     
 #[program]
@@ -29,12 +27,10 @@ pub mod token_faucet {
         msg!("program id:{}", ctx.program_id);
         msg!("config acount ower:{}", ctx.accounts.faucet_config_account.to_account_info().owner);
 
-        if ctx.accounts.receiver_p2e_games.data_is_empty() ||
-           ctx.accounts.receiver_community_games.data_is_empty() || 
-           ctx.accounts.receiver_arena.data_is_empty() || 
+        if ctx.accounts.receiver_arena.data_is_empty() || 
            ctx.accounts.receiver_nft_mining.data_is_empty() || 
            ctx.accounts.receiver_liquidity_mining.data_is_empty() || 
-           ctx.accounts.receiver_marketing_and_sales.data_is_empty() || 
+           ctx.accounts.receiver_marketing.data_is_empty() || 
            ctx.accounts.receiver_ecosystem.data_is_empty(){
             return Err(TokenFaucetError::NotInitilizedAssociatedTokenAccount.into());
         }
@@ -44,12 +40,10 @@ pub mod token_faucet {
         faucet_config_account.token_mint = *ctx.accounts.token_mint.to_account_info().key;
         faucet_config_account.token_authority = *ctx.accounts.token_authority.key;
 
-        faucet_config_account.receiver_p2e_games = *ctx.accounts.receiver_p2e_games.key;
-        faucet_config_account.receiver_community_games = *ctx.accounts.receiver_community_games.key;
         faucet_config_account.receiver_arena = *ctx.accounts.receiver_arena.key;
         faucet_config_account.receiver_nft_mining = *ctx.accounts.receiver_nft_mining.key;
         faucet_config_account.receiver_liquidity_mining = *ctx.accounts.receiver_liquidity_mining.key;
-        faucet_config_account.receiver_marketing_and_sales = *ctx.accounts.receiver_marketing_and_sales.key;
+        faucet_config_account.receiver_marketing = *ctx.accounts.receiver_marketing.key;
         faucet_config_account.receiver_ecosystem = *ctx.accounts.receiver_ecosystem.key;
         
         faucet_config_account.magic = 0x544b4654;
@@ -61,12 +55,10 @@ pub mod token_faucet {
         msg!("Token program key: {}", faucet_config_account.token_program);
         msg!("Token mint key: {}", faucet_config_account.token_mint);
         msg!("token authority key: {}", faucet_config_account.token_authority);
-        msg!("Receiver p2e games key: {}", faucet_config_account.receiver_p2e_games);
-        msg!("Receiver community games key: {}", faucet_config_account.receiver_community_games);
         msg!("Receiver arena key: {}", faucet_config_account.receiver_arena);
         msg!("Receiver nft mining key: {}", faucet_config_account.receiver_nft_mining);
         msg!("Receiver liquidity mining key: {}", faucet_config_account.receiver_liquidity_mining);
-        msg!("Receiver marketing and sales key: {}", faucet_config_account.receiver_marketing_and_sales);
+        msg!("Receiver marketing key: {}", faucet_config_account.receiver_marketing);
         msg!("Receiver ecosystem key: {}", faucet_config_account.receiver_ecosystem);
         msg!("Magic: 0x{:x}", faucet_config_account.magic);
         msg!("Nonce: {}", faucet_config_account.nonce);
@@ -111,20 +103,16 @@ pub mod token_faucet {
         msg!("Current coin number of per block: {}", faucet_config_account.coin_nums_per_block);
         msg!("This time distribution token total amounts: {}", distribution_amounts);
 
-        let receiver_p2e_games_amount: u64 = ((distribution_amounts as f64) * P2E_GAMES_PERCENTAGE) as u64;
-        let receiver_community_games_amount: u64 = ((distribution_amounts as f64) * COMMUNITY_GAMES_PERCENTAGE) as u64;
         let receiver_arena_amount: u64 = ((distribution_amounts as f64) * ARENA_PERCENTAGE) as u64;
         let receiver_nft_mining_amount: u64 = ((distribution_amounts as f64) * NFT_MINING_PERCENTAGE) as u64;
         let receiver_liquidity_mining_amount: u64 = ((distribution_amounts as f64) * LIQUIDITY_MINING_PERCENTAGE) as u64;
-        let receiver_marketing_and_sales_amount: u64 = ((distribution_amounts as f64) * MARKETING_AND_SALES_PERCENTAGE) as u64;
+        let receiver_marketing_amount: u64 = ((distribution_amounts as f64) * MARKETING_PERCENTAGE) as u64;
         let receiver_ecosystem_amount: u64 = ((distribution_amounts as f64) * ECOSYSTEM_PERCENTAGE) as u64;
 
-        msg!("This time p2e_games should be distributed token's amounts: {}", receiver_p2e_games_amount);
-        msg!("This time community_games should be distributed token's amounts: {}", receiver_community_games_amount);
         msg!("This time arena should be distributed token's amounts: {}", receiver_arena_amount);
         msg!("This time nft_mining should be distributed token's amounts: {}", receiver_nft_mining_amount);
         msg!("This time liquidity_mining should be distributed token's amounts: {}", receiver_liquidity_mining_amount);
-        msg!("This time marketing_and_sales should be distributed token's amounts: {}", receiver_marketing_and_sales_amount);
+        msg!("This time marketing should be distributed token's amounts: {}", receiver_marketing_amount);
         msg!("This time ecosystem should be distributed token's amounts: {}", receiver_ecosystem_amount);
         
         faucet_config_account.current_block_height = faucet_config_account.current_block_height.checked_add(gen_block_nums).unwrap();
@@ -133,12 +121,10 @@ pub mod token_faucet {
         msg!("Update timestamp, now last gen block timestamp: {}", faucet_config_account.last_gen_block_timestamp);
 
         msg!("Start mint to receivers");
-        ctx.accounts.token_mint_to(ctx.accounts.receiver_p2e_games.clone(), receiver_p2e_games_amount)?;
-        ctx.accounts.token_mint_to(ctx.accounts.receiver_community_games.clone(), receiver_community_games_amount)?;
         ctx.accounts.token_mint_to(ctx.accounts.receiver_arena.clone(), receiver_arena_amount)?;
         ctx.accounts.token_mint_to(ctx.accounts.receiver_nft_mining.clone(), receiver_nft_mining_amount)?;
         ctx.accounts.token_mint_to(ctx.accounts.receiver_liquidity_mining.clone(), receiver_liquidity_mining_amount)?;
-        ctx.accounts.token_mint_to(ctx.accounts.receiver_marketing_and_sales.clone(), receiver_marketing_and_sales_amount)?;
+        ctx.accounts.token_mint_to(ctx.accounts.receiver_marketing.clone(), receiver_marketing_amount)?;
         ctx.accounts.token_mint_to(ctx.accounts.receiver_ecosystem.clone(), receiver_ecosystem_amount)?;
         msg!("Mint to receivers finished");
         msg!("Finished...\n\n");
@@ -167,17 +153,13 @@ pub struct Initialize <'info> {
 
     pub token_authority: AccountInfo<'info>,
 
-    pub receiver_p2e_games: AccountInfo<'info>,
-
-    pub receiver_community_games: AccountInfo<'info>,
-
     pub receiver_arena: AccountInfo<'info>,
 
     pub receiver_nft_mining: AccountInfo<'info>,
 
     pub receiver_liquidity_mining: AccountInfo<'info>,
 
-    pub receiver_marketing_and_sales: AccountInfo<'info>,
+    pub receiver_marketing: AccountInfo<'info>,
 
     pub receiver_ecosystem: AccountInfo<'info>,
 
@@ -196,12 +178,10 @@ pub struct Drip<'info> {
         owner = id() @TokenFaucetError::InvalidConfigOwner,
         has_one = token_mint @TokenFaucetError::InvalidTokenMint,
         has_one = token_authority @TokenFaucetError::InvalidTokenAuthority,
-        has_one = receiver_p2e_games @TokenFaucetError::InvalidReceiverTokenAccount,
-        has_one = receiver_community_games @TokenFaucetError::InvalidReceiverTokenAccount,
         has_one = receiver_arena @TokenFaucetError::InvalidReceiverTokenAccount,
         has_one = receiver_nft_mining @TokenFaucetError::InvalidReceiverTokenAccount,
         has_one = receiver_liquidity_mining @TokenFaucetError::InvalidReceiverTokenAccount,
-        has_one = receiver_marketing_and_sales @TokenFaucetError::InvalidReceiverTokenAccount,
+        has_one = receiver_marketing @TokenFaucetError::InvalidReceiverTokenAccount,
         has_one = receiver_ecosystem @TokenFaucetError::InvalidReceiverTokenAccount,
         constraint = faucet_config_account.magic == 0x544b4654 @TokenFaucetError::InvalidMagic,
     )]  
@@ -216,12 +196,6 @@ pub struct Drip<'info> {
     pub token_authority: AccountInfo<'info>,
 
     #[account(mut)]
-    pub receiver_p2e_games: AccountInfo<'info>,
-    
-    #[account(mut)]
-    pub receiver_community_games:AccountInfo<'info>,
-
-    #[account(mut)]
     pub receiver_arena: AccountInfo<'info>,
 
     #[account(mut)]
@@ -231,7 +205,7 @@ pub struct Drip<'info> {
     pub receiver_liquidity_mining: AccountInfo<'info>,
 
     #[account(mut)]
-    pub receiver_marketing_and_sales: AccountInfo<'info>,
+    pub receiver_marketing: AccountInfo<'info>,
 
     #[account(mut)]
     pub receiver_ecosystem: AccountInfo<'info>,
@@ -251,12 +225,10 @@ pub struct FaucetConfigAccount {
     pub token_mint: Pubkey,
     pub token_authority: Pubkey,
 
-    pub receiver_p2e_games: Pubkey,
-    pub receiver_community_games: Pubkey,
     pub receiver_arena: Pubkey,
     pub receiver_nft_mining: Pubkey,
     pub receiver_liquidity_mining: Pubkey,
-    pub receiver_marketing_and_sales: Pubkey,
+    pub receiver_marketing: Pubkey,
     pub receiver_ecosystem: Pubkey
 }
 

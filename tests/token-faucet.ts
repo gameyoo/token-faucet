@@ -55,20 +55,16 @@ describe('token-faucet', () => {
   const program = anchor.workspace.TokenFaucet as Program<TokenFaucet>;
   const tokenDecimals = 9;
 
-  let receiver_p2e_games: anchor.web3.Keypair;
-  let receiver_community_games: anchor.web3.Keypair;
   let receiver_arena: anchor.web3.Keypair;
   let receiver_nft_mining: anchor.web3.Keypair;
   let receiver_liquidity_mining: anchor.web3.Keypair;
-  let receiver_marketing_and_sales: anchor.web3.Keypair;
+  let receiver_marketing: anchor.web3.Keypair;
   let receiver_ecosystem: anchor.web3.Keypair;
 
-  let associated_token_account_of_receiver_p2e_games: anchor.web3.PublicKey;
-  let associated_token_account_of_receiver_community_games: anchor.web3.PublicKey;
   let associated_token_account_of_receiver_arena: anchor.web3.PublicKey;
   let associated_token_account_of_receiver_nft_mining: anchor.web3.PublicKey;
   let associated_token_account_of_receiver_liquidity_mining: anchor.web3.PublicKey;
-  let associated_token_account_of_receiver_marketing_and_sales: anchor.web3.PublicKey;
+  let associated_token_account_of_receiver_marketing: anchor.web3.PublicKey;
   let associated_token_account_of_receiver_ecosystem: anchor.web3.PublicKey;
 
   let faucetConfig: anchor.web3.Keypair;
@@ -78,12 +74,10 @@ describe('token-faucet', () => {
 
   before(async () => {
     console.log("\nBefore:");
-    receiver_p2e_games = anchor.web3.Keypair.generate();
-    receiver_community_games = anchor.web3.Keypair.generate();
     receiver_arena = anchor.web3.Keypair.generate();
     receiver_nft_mining = anchor.web3.Keypair.generate();
     receiver_liquidity_mining = anchor.web3.Keypair.generate();
-    receiver_marketing_and_sales = anchor.web3.Keypair.generate();
+    receiver_marketing = anchor.web3.Keypair.generate();
     receiver_ecosystem = anchor.web3.Keypair.generate();
 
     faucetConfig = anchor.web3.Keypair.generate();
@@ -97,21 +91,7 @@ describe('token-faucet', () => {
       nonce);
 
     tokenMint = await createMint(provider, tokenAuthority, tokenDecimals);
-        
-    associated_token_account_of_receiver_p2e_games = await Token.getAssociatedTokenAddress(
-      ASSOCIATED_TOKEN_PROGRAM_ID,
-      TOKEN_PROGRAM_ID,
-      tokenMint,
-      receiver_p2e_games.publicKey
-    );
-
-    associated_token_account_of_receiver_community_games = await Token.getAssociatedTokenAddress(
-      ASSOCIATED_TOKEN_PROGRAM_ID,
-      TOKEN_PROGRAM_ID,
-      tokenMint,
-      receiver_community_games.publicKey
-    );
-
+    
     associated_token_account_of_receiver_arena = await Token.getAssociatedTokenAddress(
       ASSOCIATED_TOKEN_PROGRAM_ID,
       TOKEN_PROGRAM_ID,
@@ -133,11 +113,11 @@ describe('token-faucet', () => {
       receiver_liquidity_mining.publicKey
     );
 
-    associated_token_account_of_receiver_marketing_and_sales = await Token.getAssociatedTokenAddress(
+    associated_token_account_of_receiver_marketing = await Token.getAssociatedTokenAddress(
       ASSOCIATED_TOKEN_PROGRAM_ID,
       TOKEN_PROGRAM_ID,
       tokenMint,
-      receiver_marketing_and_sales.publicKey
+      receiver_marketing.publicKey
     );
 
     associated_token_account_of_receiver_ecosystem = await Token.getAssociatedTokenAddress(
@@ -145,24 +125,6 @@ describe('token-faucet', () => {
       TOKEN_PROGRAM_ID,
       tokenMint,
       receiver_ecosystem.publicKey
-    );
-
-    await createAssociatedTokenAccount(
-      provider,
-      tokenMint,
-      associated_token_account_of_receiver_p2e_games,
-      receiver_p2e_games.publicKey,
-      provider.wallet.publicKey,
-      provider.wallet.payer
-    );
-
-    await createAssociatedTokenAccount(
-      provider,
-      tokenMint,
-      associated_token_account_of_receiver_community_games,
-      receiver_community_games.publicKey,
-      provider.wallet.publicKey,
-      provider.wallet.payer
     );
 
     await createAssociatedTokenAccount(
@@ -195,8 +157,8 @@ describe('token-faucet', () => {
     await createAssociatedTokenAccount(
       provider,
       tokenMint,
-      associated_token_account_of_receiver_marketing_and_sales,
-      receiver_marketing_and_sales.publicKey,
+      associated_token_account_of_receiver_marketing,
+      receiver_marketing.publicKey,
       provider.wallet.publicKey,
       provider.wallet.payer
     );
@@ -211,19 +173,15 @@ describe('token-faucet', () => {
     );
 
     console.log("mint", tokenMint.toBase58());
-    console.log("receiver_p2e_games", receiver_p2e_games.publicKey.toBase58());
-    console.log("receiver_community_games", receiver_community_games.publicKey.toBase58());
     console.log("receiver_arena", receiver_arena.publicKey.toBase58());
     console.log("receiver_nft_mining", receiver_nft_mining.publicKey.toBase58());
     console.log("receiver_liquidity_mining", receiver_liquidity_mining.publicKey.toBase58());
-    console.log("receiver_marketing_and_sales", receiver_marketing_and_sales.publicKey.toBase58());
+    console.log("receiver_marketing", receiver_marketing.publicKey.toBase58());
     console.log("receiver_ecosystem", receiver_ecosystem.publicKey.toBase58());
-    console.log("associated_token_account_of_receiver_p2e_games", associated_token_account_of_receiver_p2e_games.toBase58());
-    console.log("associated_token_account_of_receiver_community_games", associated_token_account_of_receiver_community_games.toBase58());
     console.log("associated_token_account_of_receiver_arena", associated_token_account_of_receiver_arena.toBase58());
     console.log("associated_token_account_of_receiver_nft_mining", associated_token_account_of_receiver_nft_mining.toBase58());
     console.log("associated_token_account_of_receiver_liquidity_mining", associated_token_account_of_receiver_liquidity_mining.toBase58());
-    console.log("associated_token_account_of_receiver_marketing_and_sales", associated_token_account_of_receiver_marketing_and_sales.toBase58());
+    console.log("associated_token_account_of_receiver_marketing", associated_token_account_of_receiver_marketing.toBase58());
     console.log("associated_token_account_of_receiver_ecosystem", associated_token_account_of_receiver_ecosystem.toBase58());
   });
 
@@ -239,12 +197,10 @@ describe('token-faucet', () => {
           tokenProgram: TokenInstructions.TOKEN_PROGRAM_ID,
           tokenMint: tokenMint,
           tokenAuthority: tokenAuthority,
-          receiverP2eGames: associated_token_account_of_receiver_p2e_games,
-          receiverCommunityGames: associated_token_account_of_receiver_community_games,
           receiverArena: associated_token_account_of_receiver_arena,
           receiverNftMining: associated_token_account_of_receiver_nft_mining,
           receiverLiquidityMining: associated_token_account_of_receiver_liquidity_mining,
-          receiverMarketingAndSales: associated_token_account_of_receiver_marketing_and_sales,
+          receiverMarketing: associated_token_account_of_receiver_marketing,
           receiverEcosystem: associated_token_account_of_receiver_ecosystem,
           systemProgram: SystemProgram.programId,
           clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
@@ -274,16 +230,6 @@ describe('token-faucet', () => {
       );
 
       assert.strictEqual(
-        faucetConfigAccount.receiverP2EGames.toBase58(),
-        associated_token_account_of_receiver_p2e_games.toBase58()
-      );
-
-      assert.strictEqual(
-        faucetConfigAccount.receiverCommunityGames.toBase58(),
-        associated_token_account_of_receiver_community_games.toBase58()
-      );
-
-      assert.strictEqual(
         faucetConfigAccount.receiverArena.toBase58(),
         associated_token_account_of_receiver_arena.toBase58()
       );
@@ -299,8 +245,8 @@ describe('token-faucet', () => {
       );
 
       assert.strictEqual(
-        faucetConfigAccount.receiverMarketingAndSales.toBase58(),
-        associated_token_account_of_receiver_marketing_and_sales.toBase58()
+        faucetConfigAccount.receiverMarketing.toBase58(),
+        associated_token_account_of_receiver_marketing.toBase58()
       );
 
       assert.strictEqual(
@@ -334,12 +280,10 @@ describe('token-faucet', () => {
           tokenProgram: TokenInstructions.TOKEN_PROGRAM_ID,
           tokenMint: tokenMint,
           tokenAuthority: mintInfo.mintAuthority,
-          receiverP2eGames: associated_token_account_of_receiver_p2e_games,
-          receiverCommunityGames: associated_token_account_of_receiver_community_games,
           receiverArena: associated_token_account_of_receiver_arena,
           receiverNftMining: associated_token_account_of_receiver_nft_mining,
           receiverLiquidityMining: associated_token_account_of_receiver_liquidity_mining,
-          receiverMarketingAndSales: associated_token_account_of_receiver_marketing_and_sales,
+          receiverMarketing: associated_token_account_of_receiver_marketing,
           receiverEcosystem: associated_token_account_of_receiver_ecosystem,
           clock: anchor.web3.SYSVAR_CLOCK_PUBKEY
         },
@@ -348,12 +292,6 @@ describe('token-faucet', () => {
       });
 
       console.log("drip transaction signature", tx);
-
-      let _associated_token_account_of_receiver_p2e_games = await getTokenAccount(provider, associated_token_account_of_receiver_p2e_games);
-      console.log("p2e_games associated_token: %s, amount: %d", associated_token_account_of_receiver_p2e_games.toBase58(), _associated_token_account_of_receiver_p2e_games.amount);
-
-      let _associated_token_account_of_receiver_community_games = await getTokenAccount(provider, associated_token_account_of_receiver_community_games);
-      console.log("community_games associated_token: %s, amount: %d", associated_token_account_of_receiver_community_games.toBase58(), _associated_token_account_of_receiver_community_games.amount);
 
       let _associated_token_account_of_receiver_arena = await getTokenAccount(provider, associated_token_account_of_receiver_arena);
       console.log("arena associated_token: %s, amount: %d", associated_token_account_of_receiver_arena.toBase58(), _associated_token_account_of_receiver_arena.amount);
@@ -364,8 +302,8 @@ describe('token-faucet', () => {
       let _associated_token_account_of_receiver_liquidity_mining = await getTokenAccount(provider, associated_token_account_of_receiver_liquidity_mining);
       console.log("liquidity_mining associated_token: %s, amount: %d", associated_token_account_of_receiver_liquidity_mining.toBase58(), _associated_token_account_of_receiver_liquidity_mining.amount);
 
-      let _associated_token_account_of_receiver_marketing_and_sales = await getTokenAccount(provider, associated_token_account_of_receiver_marketing_and_sales);
-      console.log("marketing_and_sales associated_token: %s, amount: %d", associated_token_account_of_receiver_marketing_and_sales.toBase58(), _associated_token_account_of_receiver_marketing_and_sales.amount);
+      let _associated_token_account_of_receiver_marketing = await getTokenAccount(provider, associated_token_account_of_receiver_marketing);
+      console.log("marketing_and_sales associated_token: %s, amount: %d", associated_token_account_of_receiver_marketing.toBase58(), _associated_token_account_of_receiver_marketing.amount);
 
       let _associated_token_account_of_receiver_ecosystem = await getTokenAccount(provider, associated_token_account_of_receiver_ecosystem);
       console.log("ecosystem associated_token: %s, amount: %d", associated_token_account_of_receiver_ecosystem.toBase58(), _associated_token_account_of_receiver_ecosystem.amount);
@@ -394,12 +332,10 @@ describe('token-faucet', () => {
               tokenProgram: TokenInstructions.TOKEN_PROGRAM_ID,
               tokenMint: tokenMint,
               tokenAuthority: mintInfo.mintAuthority,
-              receiverP2eGames: associated_token_account_of_receiver_p2e_games,
-              receiverCommunityGames: associated_token_account_of_receiver_community_games,
               receiverArena: associated_token_account_of_receiver_arena,
               receiverNftMining: associated_token_account_of_receiver_nft_mining,
               receiverLiquidityMining: associated_token_account_of_receiver_liquidity_mining,
-              receiverMarketingAndSales: associated_token_account_of_receiver_marketing_and_sales,
+              receiverMarketing: associated_token_account_of_receiver_marketing,
               receiverEcosystem: associated_token_account_of_receiver_ecosystem,
               clock: anchor.web3.SYSVAR_CLOCK_PUBKEY
             },
@@ -408,12 +344,6 @@ describe('token-faucet', () => {
           });
   
           console.log("drip transaction signature: %s, index: %d ", tx, i);
-  
-          let _associated_token_account_of_receiver_p2e_games = await getTokenAccount(provider, associated_token_account_of_receiver_p2e_games);
-          console.log("p2e_games associated_token: %s, amount: %d", associated_token_account_of_receiver_p2e_games.toBase58(), _associated_token_account_of_receiver_p2e_games.amount);
-  
-          let _associated_token_account_of_receiver_community_games = await getTokenAccount(provider, associated_token_account_of_receiver_community_games);
-          console.log("community_games associated_token: %s, amount: %d", associated_token_account_of_receiver_community_games.toBase58(), _associated_token_account_of_receiver_community_games.amount);
   
           let _associated_token_account_of_receiver_arena = await getTokenAccount(provider, associated_token_account_of_receiver_arena);
           console.log("arena associated_token: %s, amount: %d", associated_token_account_of_receiver_arena.toBase58(), _associated_token_account_of_receiver_arena.amount);
@@ -424,8 +354,8 @@ describe('token-faucet', () => {
           let _associated_token_account_of_receiver_liquidity_mining = await getTokenAccount(provider, associated_token_account_of_receiver_liquidity_mining);
           console.log("liquidity_mining associated_token: %s, amount: %d", associated_token_account_of_receiver_liquidity_mining.toBase58(), _associated_token_account_of_receiver_liquidity_mining.amount);
   
-          let _associated_token_account_of_receiver_marketing_and_sales = await getTokenAccount(provider, associated_token_account_of_receiver_marketing_and_sales);
-          console.log("marketing_and_sales associated_token: %s, amount: %d", associated_token_account_of_receiver_marketing_and_sales.toBase58(), _associated_token_account_of_receiver_marketing_and_sales.amount);
+          let _associated_token_account_of_receiver_marketing = await getTokenAccount(provider, associated_token_account_of_receiver_marketing);
+          console.log("marketing associated_token: %s, amount: %d", associated_token_account_of_receiver_marketing.toBase58(), _associated_token_account_of_receiver_marketing.amount);
   
           let _associated_token_account_of_receiver_ecosystem = await getTokenAccount(provider, associated_token_account_of_receiver_ecosystem);
           console.log("ecosystem associated_token: %s, amount: %d\r\n\r\n", associated_token_account_of_receiver_ecosystem.toBase58(), _associated_token_account_of_receiver_ecosystem.amount);
