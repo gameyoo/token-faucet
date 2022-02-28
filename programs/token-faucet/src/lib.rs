@@ -38,9 +38,15 @@ pub mod token_faucet {
            ctx.accounts.receiver_liquidity_mining.data_is_empty() || 
            ctx.accounts.receiver_marketing.data_is_empty() || 
            ctx.accounts.receiver_ecosystem.data_is_empty(){
-            return Err(TokenFaucetError::NotInitilizedAssociatedTokenAccount.into());
-        }
 
+            emit!(InitializeEvent {
+                data: TokenFaucetError::NotInitializedAssociatedTokenAccount as u64,
+                status: "err".to_string()
+            });
+
+            return Err(TokenFaucetError::NotInitializedAssociatedTokenAccount.into());
+        }
+        
         let faucet_config_account = &mut ctx.accounts.faucet_config_account;
         faucet_config_account.token_program = *ctx.accounts.token_program.key;
         faucet_config_account.token_mint = *ctx.accounts.token_mint.to_account_info().key;
@@ -72,6 +78,11 @@ pub mod token_faucet {
         msg!("Last gen block timestamp: {}", faucet_config_account.last_gen_block_timestamp);
         msg!("Coin nums per block: {}\n", faucet_config_account.coin_nums_per_block);
         
+        emit!(InitializeEvent {
+            data: faucet_config_account.last_gen_block_timestamp as u64,
+            status: "ok".to_string()
+        });
+
         Ok(())
     }
 
@@ -83,18 +94,30 @@ pub mod token_faucet {
         let current_time = ctx.accounts.clock.unix_timestamp;
         
         msg!("Current Token Supply: {}", ctx.accounts.token_mint.supply);
-        if ctx.accounts.token_mint.supply >= MAX_TOTAL_SUPPLY {            
+        if ctx.accounts.token_mint.supply >= MAX_TOTAL_SUPPLY {
+            emit!(DripEvent {
+                data: TokenFaucetError::TotalSupplyLimit as u64,
+                status: "err".to_string()
+            });            
             return Err(TokenFaucetError::TotalSupplyLimit.into());
         }
 
         let faucet_config_account = &mut ctx.accounts.faucet_config_account;
         if current_time < faucet_config_account.last_gen_block_timestamp {
+            emit!(DripEvent {
+                data: TokenFaucetError::InvalidUnixTimestamp as u64,
+                status: "err".to_string()
+            });
             return Err(TokenFaucetError::InvalidUnixTimestamp.into());
         }
         
         let intervals = current_time.checked_sub(faucet_config_account.last_gen_block_timestamp).unwrap();
         msg!("Called Interval: {}s", intervals);
         if intervals < i64::try_from(BLOCK_GEN_RATE).unwrap() {
+            emit!(DripEvent {
+                data: TokenFaucetError::InsufficientIntervalError as u64,
+                status: "err".to_string()
+            });
             return Err(TokenFaucetError::InsufficientIntervalError.into());
         }
         
@@ -135,6 +158,12 @@ pub mod token_faucet {
         msg!("Mint to receivers finished");
         msg!("Finished...\n\n");
 
+        let latest_supply = ctx.accounts.token_mint.supply.checked_add(distribution_amounts).unwrap();
+
+        emit!(DripEvent {
+            data: latest_supply,
+            status: "ok".to_string()
+        });
         Ok(())
     }
 }
@@ -275,6 +304,20 @@ impl<'info> Drip<'info> {
     }
 }
 
+#[event]
+pub struct InitializeEvent {
+    pub data: u64,
+    #[index]
+    pub status: String,
+}
+
+#[event]
+pub struct DripEvent {
+    pub data: u64,
+    #[index]
+    pub status: String,
+}
+
 #[error]
 pub enum TokenFaucetError {
     #[msg("This is an error message that contain invalid params.")]
@@ -291,8 +334,8 @@ pub enum TokenFaucetError {
     InvalidConfigOwner,
     #[msg("Invalid token receiver account.")]
     InvalidReceiverTokenAccount,
-    #[msg("Not initilized token associated account.")]
-    NotInitilizedAssociatedTokenAccount,
+    #[msg("Not initialized token associated account.")]
+    NotInitializedAssociatedTokenAccount,
     #[msg("Invalid token authority.")]
     InvalidTokenAuthority,
     #[msg("Invalid token mint.")]
@@ -302,3 +345,4 @@ pub enum TokenFaucetError {
     #[msg("Invalid unix timestamp.")]
     InvalidUnixTimestamp
 }
+

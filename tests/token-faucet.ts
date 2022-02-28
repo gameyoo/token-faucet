@@ -18,6 +18,17 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
+function getExactTime(time) {
+  let date = new Date(time);
+  let year = date.getFullYear() + '-';
+  let month = (date.getMonth()+1 < 10 ? '0' + (date.getMonth()+1) : date.getMonth()+1) + '-';
+  let dates = date.getDate() + ' ';
+  let hour = date.getHours() + ':';
+  let min = date.getMinutes() + ':';
+  let second = date.getSeconds();
+  return year + month + dates + hour + min + second ;
+}
+
 async function createTokenAccount(provider, mint, owner) {
   const vault = anchor.web3.Keypair.generate();
   const tx = new anchor.web3.Transaction();
@@ -81,7 +92,6 @@ describe('token-faucet', () => {
     receiver_marketing = anchor.web3.Keypair.generate();
     receiver_ecosystem = anchor.web3.Keypair.generate();
 
-    //faucetConfig = anchor.web3.Keypair.generate();
     [faucetConfig, nonce_config] = await anchor.web3.PublicKey.findProgramAddress(
       [Buffer.from("GameYoo-Token")],
       program.programId
@@ -195,6 +205,13 @@ describe('token-faucet', () => {
     
     it("Initialize program state once", async () => {
 
+      let listener = program.addEventListener("InitializeEvent", (event, slot) => {
+        
+        console.log("slot: ", slot);
+        console.log("event data: ", getExactTime(event.data.toNumber() * 1000));
+        console.log("event status: ", event.status);
+      });
+
       const tx = await program.rpc.initialize(
         nonce, {
         accounts: {
@@ -264,6 +281,8 @@ describe('token-faucet', () => {
         faucetConfigAccount.nonce,
         nonce
       );
+
+      await program.removeEventListener(listener);
     });
   });
   
@@ -279,6 +298,12 @@ describe('token-faucet', () => {
         mintInfo.mintAuthority.toBase58(),
         tokenAuthority.toBase58()
       );
+
+      let listener = program.addEventListener("DripEvent", (event, slot) => {
+        console.log("slot: ", slot);
+        console.log("event data: ", event.data.toNumber() / 1e9);
+        console.log("event status: ", event.status);
+      });
 
       const tx = await program.rpc.drip({
         accounts: {
@@ -313,6 +338,8 @@ describe('token-faucet', () => {
 
       let _associated_token_account_of_receiver_ecosystem = await getTokenAccount(provider, associated_token_account_of_receiver_ecosystem);
       console.log("ecosystem associated_token: %s, amount: %d", associated_token_account_of_receiver_ecosystem.toBase58(), _associated_token_account_of_receiver_ecosystem.amount);
+    
+      await program.removeEventListener(listener);
     });
 
     it("Drip 100 times", async () => {
@@ -331,6 +358,12 @@ describe('token-faucet', () => {
             mintInfo.mintAuthority.toBase58(),
             tokenAuthority.toBase58()
           );
+
+          let listener = program.addEventListener("DripEvent", (event, slot) => {
+            console.log("slot: ", slot);
+            console.log("event data: ", event.data.toNumber() / 1e9);
+            console.log("event status: ", event.status);
+          });
   
           const tx = await program.rpc.drip({
             accounts: {
@@ -365,6 +398,8 @@ describe('token-faucet', () => {
   
           let _associated_token_account_of_receiver_ecosystem = await getTokenAccount(provider, associated_token_account_of_receiver_ecosystem);
           console.log("ecosystem associated_token: %s, amount: %d\r\n\r\n", associated_token_account_of_receiver_ecosystem.toBase58(), _associated_token_account_of_receiver_ecosystem.amount);
+
+          await program.removeEventListener(listener);
 
         } catch (error) {
             console.log(error);
