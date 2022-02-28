@@ -1,5 +1,11 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Mint};
+
+use anchor_spl::{
+    token::{
+        self,
+        Mint,
+    }
+};
 use std::convert::TryFrom;
 
 declare_id!("E7WGku7aoDV9GHh3cagcrraktA4nETXuCearm1WZvMNU");
@@ -134,11 +140,13 @@ pub mod token_faucet {
 }
 
 #[derive(Accounts)]
+#[instruction(bump: u8)]
 pub struct Initialize <'info> {
     #[account(
-        init_if_needed,
+        init,
         payer = user,
-        owner = id(),
+        seeds = [b"GameYoo-Token".as_ref()],
+        bump,
         rent_exempt = enforce
     )]
     pub faucet_config_account: Account<'info, FaucetConfigAccount>,
@@ -151,6 +159,10 @@ pub struct Initialize <'info> {
 
     pub token_mint: Account<'info, Mint>,
 
+    #[account(
+        seeds = [b"GYC-Mint-Auth".as_ref()],
+        bump = bump
+    )]
     pub token_authority: AccountInfo<'info>,
 
     pub receiver_arena: AccountInfo<'info>,
@@ -175,7 +187,8 @@ pub struct Drip<'info> {
 
     #[account(
         mut,
-        owner = id() @TokenFaucetError::InvalidConfigOwner,
+        seeds = [b"GameYoo-Token".as_ref()],
+        bump,
         has_one = token_mint @TokenFaucetError::InvalidTokenMint,
         has_one = token_authority @TokenFaucetError::InvalidTokenAuthority,
         has_one = receiver_arena @TokenFaucetError::InvalidReceiverTokenAccount,
@@ -193,6 +206,10 @@ pub struct Drip<'info> {
     #[account(mut)]
     pub token_mint: Account<'info, Mint>,
 
+    #[account(
+        seeds = [b"GYC-Mint-Auth".as_ref()],
+        bump = faucet_config_account.nonce
+    )]
     pub token_authority: AccountInfo<'info>,
 
     #[account(mut)]
@@ -249,7 +266,7 @@ impl<'info> Drip<'info> {
             to: receiver.to_account_info()
         };  
 
-        let seeds = &[self.faucet_config_account.to_account_info().key.as_ref(), &[self.faucet_config_account.nonce]];
+        let seeds = &[b"GYC-Mint-Auth".as_ref(), &[self.faucet_config_account.nonce]];
         let signer_seeds = &[&seeds[..]];
         let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
         token::mint_to(cpi_ctx, amount)?;

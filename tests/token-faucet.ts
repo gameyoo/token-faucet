@@ -67,10 +67,11 @@ describe('token-faucet', () => {
   let associated_token_account_of_receiver_marketing: anchor.web3.PublicKey;
   let associated_token_account_of_receiver_ecosystem: anchor.web3.PublicKey;
 
-  let faucetConfig: anchor.web3.Keypair;
+  let faucetConfig: anchor.web3.PublicKey;
   let tokenMint: anchor.web3.PublicKey;
   let tokenAuthority: anchor.web3.PublicKey;
   let nonce: number;
+  let nonce_config: number;
 
   before(async () => {
     console.log("\nBefore:");
@@ -80,16 +81,21 @@ describe('token-faucet', () => {
     receiver_marketing = anchor.web3.Keypair.generate();
     receiver_ecosystem = anchor.web3.Keypair.generate();
 
-    faucetConfig = anchor.web3.Keypair.generate();
+    //faucetConfig = anchor.web3.Keypair.generate();
+    [faucetConfig, nonce_config] = await anchor.web3.PublicKey.findProgramAddress(
+      [Buffer.from("GameYoo-Token")],
+      program.programId
+    );
+    
     [tokenAuthority, nonce] = await anchor.web3.PublicKey.findProgramAddress(
-      [faucetConfig.publicKey.toBuffer()],
+      [Buffer.from("GYC-Mint-Auth")],
       program.programId
     );
 
     console.log("-- config pubkey: %s, nonce: %d\n",
-      faucetConfig.publicKey.toBase58(),
+      faucetConfig.toBase58(),
       nonce);
-
+    
     tokenMint = await createMint(provider, tokenAuthority, tokenDecimals);
     
     associated_token_account_of_receiver_arena = await Token.getAssociatedTokenAddress(
@@ -192,7 +198,7 @@ describe('token-faucet', () => {
       const tx = await program.rpc.initialize(
         nonce, {
         accounts: {
-          faucetConfigAccount: faucetConfig.publicKey,
+          faucetConfigAccount: faucetConfig,
           user: provider.wallet.publicKey,
           tokenProgram: TokenInstructions.TOKEN_PROGRAM_ID,
           tokenMint: tokenMint,
@@ -206,13 +212,13 @@ describe('token-faucet', () => {
           clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
           rent: SYSVAR_RENT_PUBKEY,
         },
-        signers: [faucetConfig],
+        signers: [],
       }
       );
 
       console.log("initialize transaction signature", tx);
 
-      const faucetConfigAccount = await program.account.faucetConfigAccount.fetch(faucetConfig.publicKey);
+      const faucetConfigAccount = await program.account.faucetConfigAccount.fetch(faucetConfig);
 
       assert.strictEqual(
         faucetConfigAccount.tokenProgram.toBase58(),
@@ -276,7 +282,7 @@ describe('token-faucet', () => {
 
       const tx = await program.rpc.drip({
         accounts: {
-          faucetConfigAccount: faucetConfig.publicKey,
+          faucetConfigAccount: faucetConfig,
           tokenProgram: TokenInstructions.TOKEN_PROGRAM_ID,
           tokenMint: tokenMint,
           tokenAuthority: mintInfo.mintAuthority,
@@ -328,7 +334,7 @@ describe('token-faucet', () => {
   
           const tx = await program.rpc.drip({
             accounts: {
-              faucetConfigAccount: faucetConfig.publicKey,
+              faucetConfigAccount: faucetConfig,
               tokenProgram: TokenInstructions.TOKEN_PROGRAM_ID,
               tokenMint: tokenMint,
               tokenAuthority: mintInfo.mintAuthority,
