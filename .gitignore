@@ -1,5 +1,6 @@
 
 .anchor
+.history
 .DS_Store
 target
 **/*.rs.bk
