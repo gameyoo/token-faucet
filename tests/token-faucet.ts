@@ -16,11 +16,8 @@ import {
   TOKEN_PROGRAM_ID,
   u64,
 } from "@solana/spl-token";
-// import { PublicKey, LAMPORTS_PER_SOL, Commitment } from "@solana/web3.js";
-// import { token } from "@project-serum/anchor/dist/cjs/utils";
 
 const { SystemProgram, SYSVAR_RENT_PUBKEY } = anchor.web3;
-const magic = 0x544b4654;
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
