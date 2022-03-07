@@ -16,10 +16,11 @@ pub const BLOCK_GEN_RATE: u8 = 3; // Generate a block every three seconds.
 pub const MAX_TOTAL_SUPPLY: u64 = 210_000_000 * 10_u64.pow(DECIMALS as u32); // The supply of tokens is capped at 210 million.
 pub const COIN_NUM_PER_BLOCK: u64 = 3 * 10_u64.pow(DECIMALS as u32); // Per block contains 3 tokens.
 pub const ARENA_PERCENTAGE: f64 = 0.07352941176470588235294117647059; // Percentage of arena.
-pub const NFT_MINING_PERCENTAGE: f64 = 0.36764705882352941176470588235294; // Percentage of NFT minting.
+pub const NFT_MINING_PERCENTAGE: f64 = 0.17647058823529411764705882352941; // Percentage of NFT minting.
 pub const LIQUIDITY_MINING_PERCENTAGE: f64 = 0.19117647058823529411764705882353; // Percentage of liquidity minting.
-pub const MARKETING_PERCENTAGE: f64 = 0.07352941176470588235294117647059; // Percentage of NFT trading Market.
+pub const MARKETING_PERCENTAGE: f64 = 0.04411764705882352941176470588235; // Percentage of NFT trading Market.
 pub const ECOSYSTEM_PERCENTAGE: f64 = 0.29411764705882352941176470588235; // Percentage of ecosystem.
+pub const GYC_STAKING_PERCENTAGE: f64 = 0.22058823529411764705882352941176; // Percentage of GYC staking.
 
 #[program]
 pub mod token_faucet {
@@ -27,9 +28,9 @@ pub mod token_faucet {
 
     // Initialize configuration account.
     /**
-    * @param ctx : Initialize context
-    * @param bump : Bump seed for program address.
-    */
+     * @param ctx : Initialize context
+     * @param bump : Bump seed for program address.
+     */
     pub fn initialize(ctx: Context<Initialize>, bump: u8) -> ProgramResult {
         // Determine if the recipient's associated token account has been created; if not, return the corresponding error.
         require!(
@@ -52,6 +53,10 @@ pub mod token_faucet {
             !ctx.accounts.receiver_ecosystem.data_is_empty(),
             StatusInfo::NotInitializedAssociatedTokenAccount
         );
+        require!(
+            !ctx.accounts.receiver_gyc_staking.data_is_empty(),
+            StatusInfo::NotInitializedAssociatedTokenAccount
+        );
 
         let config_account = &mut ctx.accounts.config_account;
 
@@ -70,6 +75,7 @@ pub mod token_faucet {
         config_account.receiver_liquidity_mining = *ctx.accounts.receiver_liquidity_mining.key;
         config_account.receiver_marketing = *ctx.accounts.receiver_marketing.key;
         config_account.receiver_ecosystem = *ctx.accounts.receiver_ecosystem.key;
+        config_account.receiver_gyc_staking = *ctx.accounts.receiver_gyc_staking.key;
 
         // Record the magic number.
         config_account.magic = 0x544b4654;
@@ -93,6 +99,7 @@ pub mod token_faucet {
             receiver_liquidity_mining: *ctx.accounts.receiver_liquidity_mining.key,
             receiver_marketing: *ctx.accounts.receiver_marketing.key,
             receiver_ecosystem: *ctx.accounts.receiver_ecosystem.key,
+            receiver_gyc_staking: *ctx.accounts.receiver_gyc_staking.key,
             current_block_height: config_account.current_block_height,
             last_gen_block_timestamp: config_account.last_gen_block_timestamp,
             timestamp: Clock::get()?.unix_timestamp,
@@ -104,8 +111,8 @@ pub mod token_faucet {
     /// Mint tokens for recipients according to the corresponding ratio.
     /// This can be called by anyone.
     /**
-    * @param ctx : Drip context
-    */
+     * @param ctx : Drip context
+     */
     pub fn drip(ctx: Context<Drip>) -> ProgramResult {
         let current_time = Clock::get()?.unix_timestamp;
 
@@ -154,6 +161,8 @@ pub mod token_faucet {
             ((distribution_amounts as f64) * MARKETING_PERCENTAGE) as u64;
         let receiver_ecosystem_amount: u64 =
             ((distribution_amounts as f64) * ECOSYSTEM_PERCENTAGE) as u64;
+        let receiver_gyc_staking_amount: u64 =
+            ((distribution_amounts as f64) * GYC_STAKING_PERCENTAGE) as u64;
 
         // Update block height.
         let current_block_height = config_account
@@ -187,6 +196,10 @@ pub mod token_faucet {
             ctx.accounts.receiver_ecosystem.clone(),
             receiver_ecosystem_amount,
         )?;
+        ctx.accounts.token_mint_to(
+            ctx.accounts.receiver_gyc_staking.clone(),
+            receiver_gyc_staking_amount,
+        )?;
 
         let supply = ctx.accounts.mint.supply;
 
@@ -200,6 +213,7 @@ pub mod token_faucet {
             receiver_liquidity_mining: ctx.accounts.receiver_liquidity_mining.key().clone(),
             receiver_marketing: ctx.accounts.receiver_marketing.key().clone(),
             receiver_ecosystem: ctx.accounts.receiver_ecosystem.key().clone(),
+            receiver_gyc_staking: ctx.accounts.receiver_gyc_staking.key().clone(),
             current_block_height: current_block_height,
             last_gen_block_timestamp: last_gen_block_timestamp,
             receiver_arena_amount: receiver_arena_amount,
@@ -207,6 +221,7 @@ pub mod token_faucet {
             receiver_nft_mining_amount: receiver_nft_mining_amount,
             receiver_marketing_amount: receiver_marketing_amount,
             receiver_ecosystem_amount: receiver_ecosystem_amount,
+            receiver_gyc_staking_amount: receiver_gyc_staking_amount,
             intervals: intervals,
             supply: supply,
             timestamp: Clock::get()?.unix_timestamp,
@@ -267,6 +282,9 @@ pub struct Initialize<'info> {
     /// The associated token account of recipient for ecosystem.
     pub receiver_ecosystem: AccountInfo<'info>,
 
+    /// The associated token account of recipient for GYC staking.
+    pub receiver_gyc_staking: AccountInfo<'info>,
+
     /// System program.
     pub system_program: Program<'info, System>,
 
@@ -294,6 +312,7 @@ pub struct Drip<'info> {
         has_one = receiver_liquidity_mining @StatusInfo::InvalidReceiverTokenAccount,
         has_one = receiver_marketing @StatusInfo::InvalidReceiverTokenAccount,
         has_one = receiver_ecosystem @StatusInfo::InvalidReceiverTokenAccount,
+        has_one = receiver_gyc_staking @StatusInfo::InvalidReceiverTokenAccount,
         constraint = config_account.magic == 0x544b4654 @StatusInfo::InvalidMagic,
     )]
     pub config_account: Account<'info, ConfigAccount>,
@@ -333,6 +352,10 @@ pub struct Drip<'info> {
     #[account(mut)]
     pub receiver_ecosystem: AccountInfo<'info>,
 
+    /// The associated token account of recipient for GYC staking.
+    #[account(mut)]
+    pub receiver_gyc_staking: AccountInfo<'info>,
+
     /// Clock represents network time.
     pub clock: Sysvar<'info, Clock>,
 }
@@ -370,6 +393,8 @@ pub struct ConfigAccount {
     pub receiver_marketing: Pubkey,
     /// The associated token account of recipient for ecosystem.
     pub receiver_ecosystem: Pubkey,
+    /// The associated token account of recipient for GYC staking.
+    pub receiver_gyc_staking: Pubkey,
 }
 
 impl Default for ConfigAccount {
@@ -429,6 +454,9 @@ pub struct InitializeEvent {
     /// The associated token account of recipient for ecosystem.
     #[index]
     pub receiver_ecosystem: Pubkey,
+    /// The associated token account of recipient for GYC staking.
+    #[index]
+    pub receiver_gyc_staking: Pubkey,
     /// The current block height.
     pub current_block_height: u64,
     /// The timestamp of last block generation.
@@ -465,6 +493,9 @@ pub struct DripEvent {
     /// The associated token account of recipient for ecosystem.
     #[index]
     pub receiver_ecosystem: Pubkey,
+    /// The associated token account of recipient for GYC staking.
+    #[index]
+    pub receiver_gyc_staking: Pubkey,
     /// The current block height.
     pub current_block_height: u64,
     /// The timestamp of last block generation.
@@ -479,6 +510,8 @@ pub struct DripEvent {
     pub receiver_marketing_amount: u64,
     /// Amount of token distribution to ecosystem.
     pub receiver_ecosystem_amount: u64,
+    /// Amount of token distribution to GYC staking.
+    pub receiver_gyc_staking_amount: u64,
     /// interval of invoke drip instruction.
     pub intervals: i64,
     /// Latest supply.

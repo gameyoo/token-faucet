@@ -86,6 +86,7 @@ describe("token-faucet", () => {
   let receiver_liquidity_mining: anchor.web3.Keypair;
   let receiver_marketing: anchor.web3.Keypair;
   let receiver_ecosystem: anchor.web3.Keypair;
+  let receiver_gyc_staking: anchor.web3.Keypair;
 
   // Several associated token account.
   let associated_token_account_of_receiver_arena: anchor.web3.PublicKey;
@@ -93,6 +94,7 @@ describe("token-faucet", () => {
   let associated_token_account_of_receiver_liquidity_mining: anchor.web3.PublicKey;
   let associated_token_account_of_receiver_marketing: anchor.web3.PublicKey;
   let associated_token_account_of_receiver_ecosystem: anchor.web3.PublicKey;
+  let associated_token_account_of_receiver_gyc_staking: anchor.web3.PublicKey;
 
   // config account of program.
   let config: anchor.web3.PublicKey;
@@ -112,6 +114,7 @@ describe("token-faucet", () => {
     receiver_liquidity_mining = anchor.web3.Keypair.generate();
     receiver_marketing = anchor.web3.Keypair.generate();
     receiver_ecosystem = anchor.web3.Keypair.generate();
+    receiver_gyc_staking = anchor.web3.Keypair.generate();
 
     // Get config account address; it's PDA.
     [config] = await anchor.web3.PublicKey.findProgramAddress(
@@ -171,6 +174,14 @@ describe("token-faucet", () => {
         receiver_ecosystem.publicKey
       );
 
+    associated_token_account_of_receiver_gyc_staking =
+      await Token.getAssociatedTokenAddress(
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+        TOKEN_PROGRAM_ID,
+        mint,
+        receiver_gyc_staking.publicKey
+      );
+
     /*
         Create associated token account for several recipient.
     */
@@ -219,6 +230,15 @@ describe("token-faucet", () => {
       provider.wallet.payer
     );
 
+    await createAssociatedTokenAccount(
+      provider,
+      mint,
+      associated_token_account_of_receiver_gyc_staking,
+      receiver_gyc_staking.publicKey,
+      provider.wallet.publicKey,
+      provider.wallet.payer
+    );
+
     console.log(`
 config: ${config.toBase58()}
 bump: ${bump}
@@ -229,11 +249,13 @@ receiver_nft_mining: ${receiver_nft_mining.publicKey.toBase58()}
 receiver_liquidity_mining: ${receiver_liquidity_mining.publicKey.toBase58()}
 receiver_marketing: ${receiver_marketing.publicKey.toBase58()}
 receiver_ecosystem: ${receiver_ecosystem.publicKey.toBase58()}
+receiver_gyc_staking: ${receiver_gyc_staking.publicKey.toBase58()}
 associated_token_account_of_receiver_arena:  ${associated_token_account_of_receiver_arena.toBase58()}
 associated_token_account_of_receiver_nft_mining: ${associated_token_account_of_receiver_nft_mining.toBase58()}
 associated_token_account_of_receiver_liquidity_mining: ${associated_token_account_of_receiver_liquidity_mining.toBase58()}
 associated_token_account_of_receiver_marketing: ${associated_token_account_of_receiver_marketing.toBase58()}
 associated_token_account_of_receiver_ecosystem: ${associated_token_account_of_receiver_ecosystem.toBase58()}
+associated_token_account_of_receiver_gyc_staking: ${associated_token_account_of_receiver_gyc_staking.toBase58()}
 `);
   });
 
@@ -256,6 +278,7 @@ receiver_nft_mining: ${event.receiverNftMining.toBase58()}
 receiver_liquidity_mining: ${event.receiverLiquidityMining.toBase58()}
 receiver_marketing: ${event.receiverMarketing.toBase58()}
 receiver_ecosystem: ${event.receiverEcosystem.toBase58()}
+receiver_gyc_staking: ${event.receiver_gyc_staking.toBase58()}
 current_block_height: ${event.currentBlockHeight}
 last_gen_block_timestamp: ${event.lastGenBlockTimestamp}
 timestamp: ${event.timestamp}\n`
@@ -277,6 +300,7 @@ timestamp: ${event.timestamp}\n`
             associated_token_account_of_receiver_liquidity_mining,
           receiverMarketing: associated_token_account_of_receiver_marketing,
           receiverEcosystem: associated_token_account_of_receiver_ecosystem,
+          receiverGycStaking: associated_token_account_of_receiver_gyc_staking,
           systemProgram: SystemProgram.programId,
           clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
           rent: SYSVAR_RENT_PUBKEY,
@@ -321,6 +345,11 @@ timestamp: ${event.timestamp}\n`
         associated_token_account_of_receiver_ecosystem.toBase58()
       );
 
+      assert.strictEqual(
+        configAccount.receiverGycStaking.toBase58(),
+        associated_token_account_of_receiver_gyc_staking.toBase58()
+      );
+
       assert.strictEqual(configAccount.bump, bump);
 
       //await program.removeEventListener(listener);
@@ -352,6 +381,7 @@ receiver_nft_mining: ${event.receiverNftMining.toBase58()}
 receiver_liquidity_mining: ${event.receiverLiquidityMining.toBase58()}
 receiver_marketing: ${event.receiverMarketing.toBase58()}
 receiver_ecosystem: ${event.receiverEcosystem.toBase58()}
+receiver_gyc_staking: ${event.receiverGycStaking.toBase58()}
 current_block_height: ${event.currentBlockHeight}
 last_gen_block_timestamp: ${event.lastGenBlockTimestamp}
 receiverArenaAmount: ${event.receiverArenaAmount}
@@ -359,6 +389,7 @@ receiverNftMiningAmount: ${event.receiverNftMiningAmount}
 receiverLiquidityMiningAmount: ${event.receiverLiquidityMiningAmount}
 receiverMarketingAmount: ${event.receiverMarketingAmount}
 receiverEcosystemAmount: ${event.receiverEcosystemAmount}
+receiverGycStakingAmount: ${event.receiverGycStakingAmount}
 intervals: ${event.intervals}
 supply: ${event.supply}
 timestamp: ${event.timestamp}\n`
@@ -378,6 +409,7 @@ timestamp: ${event.timestamp}\n`
             associated_token_account_of_receiver_liquidity_mining,
           receiverMarketing: associated_token_account_of_receiver_marketing,
           receiverEcosystem: associated_token_account_of_receiver_ecosystem,
+          receiverGycStaking: associated_token_account_of_receiver_gyc_staking,
           clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
         },
         signers: [],
@@ -444,12 +476,25 @@ timestamp: ${event.timestamp}\n`
         }`
       );
 
+      let _associated_token_account_of_receiver_gyc_staking =
+        await getTokenAccount(
+          provider,
+          associated_token_account_of_receiver_gyc_staking
+        );
+
+      console.log(
+        `gyc_staking associated_token: ${associated_token_account_of_receiver_gyc_staking.toBase58()}, amount: ${
+          _associated_token_account_of_receiver_gyc_staking.amount
+        }`
+      );
+
       await program.removeEventListener(listener);
     });
 
     it("Drip 100 times", async () => {
       let i = 1;
 
+      // Listen drip event of on-chain program.
       let listener = program.addEventListener("DripEvent", (event, slot) => {
         console.log(
           `DripEvent time: ${getExactTime(event.timestamp.toNumber() * 1000)}
@@ -462,6 +507,7 @@ receiver_nft_mining: ${event.receiverNftMining.toBase58()}
 receiver_liquidity_mining: ${event.receiverLiquidityMining.toBase58()}
 receiver_marketing: ${event.receiverMarketing.toBase58()}
 receiver_ecosystem: ${event.receiverEcosystem.toBase58()}
+receiver_gyc_staking: ${event.receiverGycStaking.toBase58()}
 current_block_height: ${event.currentBlockHeight}
 last_gen_block_timestamp: ${event.lastGenBlockTimestamp}
 receiverArenaAmount: ${event.receiverArenaAmount}
@@ -469,6 +515,7 @@ receiverNftMiningAmount: ${event.receiverNftMiningAmount}
 receiverLiquidityMiningAmount: ${event.receiverLiquidityMiningAmount}
 receiverMarketingAmount: ${event.receiverMarketingAmount}
 receiverEcosystemAmount: ${event.receiverEcosystemAmount}
+receiverGycStakingAmount: ${event.receiverGycStakingAmount}
 intervals: ${event.intervals}
 supply: ${event.supply}
 timestamp: ${event.timestamp}\n`
@@ -487,6 +534,7 @@ timestamp: ${event.timestamp}\n`
             mintAuthority.toBase58()
           );
 
+          // Mint token to several recipient by Invoke drip instruction of on-chain program.
           const tx = await program.rpc.drip({
             accounts: {
               configAccount: config,
@@ -500,6 +548,8 @@ timestamp: ${event.timestamp}\n`
                 associated_token_account_of_receiver_liquidity_mining,
               receiverMarketing: associated_token_account_of_receiver_marketing,
               receiverEcosystem: associated_token_account_of_receiver_ecosystem,
+              receiverGycStaking:
+                associated_token_account_of_receiver_gyc_staking,
               clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
             },
             signers: [],
@@ -564,6 +614,18 @@ timestamp: ${event.timestamp}\n`
           console.log(
             `ecosystem associated_token: ${associated_token_account_of_receiver_ecosystem.toBase58()}, amount: ${
               _associated_token_account_of_receiver_ecosystem.amount
+            }`
+          );
+
+          let _associated_token_account_of_receiver_gyc_staking =
+            await getTokenAccount(
+              provider,
+              associated_token_account_of_receiver_gyc_staking
+            );
+
+          console.log(
+            `gyc_staking associated_token: ${associated_token_account_of_receiver_gyc_staking.toBase58()}, amount: ${
+              _associated_token_account_of_receiver_gyc_staking.amount
             }`
           );
         } catch (error) {
