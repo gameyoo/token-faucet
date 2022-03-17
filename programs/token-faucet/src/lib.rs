@@ -9,7 +9,7 @@ use anchor_lang::solana_program::system_program;
 use anchor_spl::token::{self, Mint};
 use std::convert::TryFrom;
 
-declare_id!("E7WGku7aoDV9GHh3cagcrraktA4nETXuCearm1WZvMNU");
+declare_id!("Ce3x2Wup3hNWDcNnLuXRjB9msb8aRn6xX8U5aq1fTYrN");
 
 #[constant]
 pub const DECIMALS: u8 = 9; // Token decimals is 9.
@@ -291,9 +291,11 @@ pub struct Initialize<'info> {
     pub system_program: Program<'info, System>,
 
     /// Clock represents network time.
+    #[account(address = solana_program::sysvar::clock::ID @ StatusInfo::InvalidSysvarClock)]
     pub clock: Sysvar<'info, Clock>,
 
     /// Rent for rent exempt.
+    #[account(address = solana_program::sysvar::rent::ID @ StatusInfo::InvalidSysvarRent)]
     pub rent: Sysvar<'info, Rent>,
 }
 
@@ -359,6 +361,7 @@ pub struct Drip<'info> {
     pub receiver_gyc_staking: AccountInfo<'info>,
 
     /// Clock represents network time.
+    #[account(address = solana_program::sysvar::clock::ID @ StatusInfo::InvalidSysvarClock)]
     pub clock: Sysvar<'info, Clock>,
 }
 
@@ -553,4 +556,10 @@ pub enum StatusInfo {
     InvalidTokenProgram,
     #[msg("Invalid timestamp.")]
     InvalidTimestamp,
+    #[msg("Invalid system program.")]
+    InvalidSystemProgram,
+    #[msg("Invalid sysvar clock.")]
+    InvalidSysvarClock,
+    #[msg("Invalid sysvar rent.")]
+    InvalidSysvarRent,
 }

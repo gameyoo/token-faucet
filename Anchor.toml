@@ -1,14 +1,14 @@
 [programs.mainnet]
-token_faucet = "E7WGku7aoDV9GHh3cagcrraktA4nETXuCearm1WZvMNU"
+token_faucet = "Ce3x2Wup3hNWDcNnLuXRjB9msb8aRn6xX8U5aq1fTYrN"
 
 [programs.devnet]
-token_faucet = "E7WGku7aoDV9GHh3cagcrraktA4nETXuCearm1WZvMNU"
+token_faucet = "Ce3x2Wup3hNWDcNnLuXRjB9msb8aRn6xX8U5aq1fTYrN"
 
 [programs.testnet]
-token_faucet = "E7WGku7aoDV9GHh3cagcrraktA4nETXuCearm1WZvMNU"
+token_faucet = "Ce3x2Wup3hNWDcNnLuXRjB9msb8aRn6xX8U5aq1fTYrN"
 
 [programs.localnet]
-token_faucet = "E7WGku7aoDV9GHh3cagcrraktA4nETXuCearm1WZvMNU"
+token_faucet = "Ce3x2Wup3hNWDcNnLuXRjB9msb8aRn6xX8U5aq1fTYrN"
 
 [registry]
 url = "https://anchor.projectserum.com"
