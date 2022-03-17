@@ -5,6 +5,7 @@
 */
 
 use anchor_lang::prelude::*;
+use anchor_lang::solana_program::system_program;
 use anchor_spl::token::{self, Mint};
 use std::convert::TryFrom;
 
@@ -286,6 +287,7 @@ pub struct Initialize<'info> {
     pub receiver_gyc_staking: AccountInfo<'info>,
 
     /// System program.
+    #[account(address = system_program::ID)]
     pub system_program: Program<'info, System>,
 
     /// Clock represents network time.
